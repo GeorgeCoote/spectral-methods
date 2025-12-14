@@ -38,7 +38,7 @@ class Config:
             List of allowed data types for integers. 
 
         float_allowed : list[dtype]
-            
+           List of allowed data types for floats.
 
         Returns
         -------------
@@ -335,3 +335,4 @@ def generate_grid(n:int) -> list[complex]:
     return grid
 
 # CompSpecUB
+
