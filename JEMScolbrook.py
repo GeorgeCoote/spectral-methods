@@ -82,7 +82,7 @@ class Config:
                 if type_check(key, value):
                     setattr(self, key, value)
                 else:
-                    raise ValueError(f"{type(key)} not an allowed type for {key}. Allowed types are {allowed_types(key)}")
+                    raise ValueError(f"{type(key)} not an allowed type for {key}. Allowed types are {self.allowed_types(key)}")
             else:
                 raise ValueError(f"Unknown parameter: {key}")
     def reset(self) -> None:
@@ -98,7 +98,7 @@ class Config:
         }
     
     def type_check(self, key, value):
-        return type(value) in allowed_types(key)
+        return type(value) in self.allowed_types(key)
 
 config = Config() # init config
 
@@ -335,6 +335,7 @@ def generate_grid(n : int) -> list[complex]:
     return grid
 
 # CompSpecUB
+
 
 
 
