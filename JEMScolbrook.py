@@ -25,9 +25,10 @@ class Config:
 
             Default 10_000_000.
 
-        zero_tolerance : float 
-            Resolvent bounds g may be computed inexactly, yet are still expected to satisfy g(0.0) = 0.0. Implementing a direct inequality check may give false
-            negatives, hence we consider g(0) = 0 validated if g(0) < zero_tolerance. Should be optimized based on the level of precision expected.
+        float_tolerance : float 
+            Comparison of floats (especially equality) is numerically fragile. To circumvent this, we validate that x > 0 if x > float_tolerance. We validate that x = 0 if x < float_tolerance. 
+            
+            Default 1e-10
             
 
         init_guess : int
@@ -49,11 +50,11 @@ class Config:
         None, hopefully
         '''
         self.max_iter = 10_000_000
-        self.zero_tolerance = 1e-10
+        self.float_tolerance = 1e-10
         self.init_guess = 0
         self.allowed_types = {
             'max_iter': [int],
-            'zero_tolerance': [float],
+            'float_tolerance': [float],
             'init_guess': [int]
         }
         self.int_allowed = [int]
@@ -69,9 +70,8 @@ class Config:
 
             For example, a given resolvent bound may loop infinitely. 
 
-        zero_tolerance : float 
-            Resolvent bounds g may be computed inexactly, yet are still expected to satisfy g(0.0) = 0.0. Implementing a direct inequality check may give false
-            negatives, hence we consider g(0) = 0 validated if g(0) < zero_tolerance. Should be optimized based on the level of precision expected.
+        float_tolerance : float 
+            Comparison of floats (especially equality) is numerically fragile. To circumvent this, we validate that x > 0 if x > float_tolerance. We validate that x = 0 if x < float_tolerance. 
 
         init_guess : int
             Where an integer is being approximated, init_guess is used as its default value. If the integer is expected to be large, one may consider using a
@@ -94,7 +94,7 @@ class Config:
         '''Get current values of module constants'''
         return {
             'max_iter': self.max_iter,
-            'zero_tolerance': self.zero_tolerance,
+            'float_tolerance': self.float_tolerance,
             'init_guess': self.init_guess,
             'int_allowed': self.int_allowed,
             'float_allowed': self.float_allowed
@@ -123,7 +123,7 @@ def _generate_matrix(matrix : Callable[[int, int], float], m : int, n : int, z :
     
 # CompInvg
 
-def _input_validation_compInvg(n : int, y : float, g : Callable[[float], float], zero_tolerance : float) -> None:
+def _input_validation_compInvg(n : int, y : float, g : Callable[[float], float], float_tolerance : float = config.float_tolerance) -> None:
     '''
     Input validation for CompInvg_slow and CompInvg. Not intended to be called directly. 
     '''
@@ -133,10 +133,10 @@ def _input_validation_compInvg(n : int, y : float, g : Callable[[float], float],
         raise ValueError("Precision n must be positive")  
     if y < 0:
         raise ValueError("y in g^(-1)(y) must be non-negative") 
-    if abs(g(0.0)) >= zero_tolerance:
+    if abs(g(0.0)) >= float_tolerance:
         raise ValueError("We must have g(0) = 0, with g our resolvent bound. This g(0) falls out of floating point tolerance.")
 
-def CompInvg_slow(n : int, y : float, g : Callable[[float], float], max_iter : int = config.max_iter, init_guess : int = config.init_guess, zero_tolerance : float = config.zero_tolerance) -> Fraction:
+def CompInvg_slow(n : int, y : float, g : Callable[[float], float], max_iter : int = config.max_iter, init_guess : int = config.init_guess, float_tolerance : float = config.float_tolerance) -> Fraction:
     '''
     Approximate g^(-1)(y) using a discrete mesh of size 1/n. Specifically, we find the least k such that g(k/n) > y and hence give an approximation to g^(-1)(y) to precision 1/n. 
 
@@ -154,8 +154,8 @@ def CompInvg_slow(n : int, y : float, g : Callable[[float], float], max_iter : i
         maximum number of iterations to find k/n before termination. Default 10,000,000.
     init_guess : int 
         initial guess for k. Default 0. 
-    zero_tolerance: float
-        we validate that g(0) = 0 if g(0.0) < zero_tolerance
+    float_tolerance: float
+        we validate that g(0) = 0 if g(0.0) < float_tolerance
     
     Returns 
     -------------
@@ -179,7 +179,7 @@ def CompInvg_slow(n : int, y : float, g : Callable[[float], float], max_iter : i
     O(n) assuming inexpensive g, does n iterations
     '''
     # input validation 
-    _input_validation_compInvg(n, y, g, zero_tolerance)
+    _input_validation_compInvg(n, y, g, float_tolerance)
     
     # We first identify a 1-wide interval within which g first exceeds y
     j = init_guess
@@ -194,7 +194,7 @@ def CompInvg_slow(n : int, y : float, g : Callable[[float], float], max_iter : i
             return Fraction(k, n) # using fraction to avoid floating point errors
 
 #DistSpec 
-def DistSpec_slow(matrix : Callable[[int, int], complex], n : int, z : complex, f : Callable[[int], int], max_iter : int = config.max_iter) -> Fraction:
+def DistSpec_slow(matrix : Callable[[int, int], complex], n : int, z : complex, f : Callable[[int], int], max_iter : int = config.max_iter, float_tolerance : float = config.float_tolerance) -> Fraction:
     '''
     Approximate norm(R(z, A))^(-1) with mesh size 1/n given dispersion f
     
@@ -213,7 +213,9 @@ def DistSpec_slow(matrix : Callable[[int, int], complex], n : int, z : complex, 
     f : collections.abc.Callable[[int], int]
         a dispersion control for the matrix, accepting ints and giving ints
     max_iter : int 
-        maximum number of iterations to find k/n before termination
+        maximum number of iterations to find k/n before termination. Defaults to module default (default 0)
+    float_tolerance : float 
+        error margin for floating point calculations. Defaults to module default (default 1e-10) 
     
     Returns
     -------------
@@ -264,8 +266,8 @@ def DistSpec_slow(matrix : Callable[[int, int], complex], n : int, z : complex, 
         l += 1
         l2 = l*l  
         n2 = n*n
-        p = np.all(eigvals_S > l2/n2) # check whether S - l^2/n^2 I is positive definite. This represents an upper bound on distance to the spectrum
-        q = np.all(eigvals_T > l2/n2) # check whether T - l^2/n^2 I is positive definite. This represents an upper bound on distance to the spectrum
+        p = np.all(eigvals_S > l2/n2 + float_tolerance) # check whether S - l^2/n^2 I is positive definite. This represents an upper bound on distance to the spectrum
+        q = np.all(eigvals_T > l2/n2 + float_tolerance) # check whether T - l^2/n^2 I is positive definite. This represents an upper bound on distance to the spectrum
         v = p and q
     if l == max_iter:
         raise RuntimeError(f"max_iter ({max_iter}) exceeded")
@@ -341,6 +343,7 @@ def generate_grid(n : int) -> list[complex]:
     '''
     # input validation 
     _input_validation_generate_grid(n)
+    
     #prepare for loop  
     n2 = n*n #pre-compute n^2 so we don't have to re-compute it every loop
     n4 = n2*n2 # pre-compute n^4 to avoid re-computation
