@@ -482,9 +482,9 @@ def intersect_grid_with_ball(n : int, rad : Fraction, centre : tuple[Fraction, F
     Raises 
     -------------
     TypeError: 
-        if n is not an integer (inherited from generate_grid)
+        if n is not an integer (propagated from generate_grid)
     ValueError:
-        if n <= 0 (inherited from generate_grid) 
+        if n <= 0 (propagated from generate_grid) 
         if r < 0 (cannot have ball with negative radius. Non-zero radius is trivial (contains only z) but accepted.
     '''
     grid = generate_grid(n)
@@ -528,11 +528,11 @@ def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Callable[[fl
     Raises 
     -------------
     TypeError: 
-        if n is not an integer (inherited from generate_grid)
-        if f(n) is not an integer (inherited from _validate_f)
+        if n is not an integer (propagated from generate_grid)
+        if f(n) is not an integer (propagated from _validate_f)
     ValueError:
-        if n <= 0 (inherited from generate_grid)
-        if f(n) < n + 1 (inherited from _validate_f)
+        if n <= 0 (propagated from generate_grid)
+        if f(n) < n + 1 (propagated from _validate_f)
     '''
     
     fn = f(n) if fn is None else fn # pre-compute f(n) to avoid re-computation in loop if it is not passed as pre-computed parameter
@@ -610,12 +610,12 @@ def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int
     Raises 
     -------------
     TypeError: 
-        if n is not an integer (inherited from generate_grid)
-        if f(n) is not an integer (inherited from _validate_f)
+        if n is not an integer (propagated from generate_grid)
+        if f(n) is not an integer (propagated from _validate_f)
     ValueError:
-        if n <= 0 (inherited from generate_grid)
-        if f(n) < n + 1 (inherited from _validate_f)
-        if eps <= 0 (inherited from _validate_eps)
+        if n <= 0 (propagated from generate_grid)
+        if f(n) < n + 1 (propagated from _validate_f)
+        if eps <= 0 (propagated from _validate_eps)
     '''
     eps = _validate_eps(eps)
     grid = generate_grid(n)
@@ -628,3 +628,4 @@ def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int
         if DistSpec(matrix, n, z, f, fn, c, c_n) + c_n < eps
     ]
         
+
