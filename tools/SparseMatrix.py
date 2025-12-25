@@ -9,8 +9,8 @@ class SparseMatrix:
     def __add__(self, B : SparseMatrix) -> SparseMatrix:
         new_entries = self.entries.copy()
         for idx in B.entries:
-            new_entries[idx] = new_entries.get(idx, 0.0) + B.entries[idx] 
-        new_default = self.get_default + B.get_default
+            new_entries[idx] = new_entries.get(idx, self.default) + B.entries[idx] 
+        new_default = self.default + B.default
         return SparseMatrix(new_entries, new_default)
 
     def __repr__(self) -> str:
