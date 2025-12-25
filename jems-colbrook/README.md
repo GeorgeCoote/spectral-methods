@@ -22,8 +22,8 @@ def diagonal_matrix(i : int, j : int) -> int:
   ...
   '''
   if i == j:
-    prefactor = (2*((i + 1)%2) - 1) # (-1)^i
-    return prefactor*i*i # (-1)^i * i^2
+    sign = (2*((i + 1)%2) - 1) # (-1)^i
+    return sign*i*i # (-1)^i * i^2
   return 0
 ```
 
