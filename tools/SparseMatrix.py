@@ -6,11 +6,16 @@ class SparseMatrix:
     def __call__(self, i : int, j : int) -> float:
         return self.entries.get((i, j), self.default)
     
-    def __add__(self, B : SparseMatrix) -> SparseMatrix:
+    def __add__(self, B : 'SparseMatrix') -> 'SparseMatrix':
+        # TODO: identify smaller matrix between self and B, and for loop over that instead of B by default.
+        new_default = self.default + B.default
         new_entries = self.entries.copy()
         for idx in B.entries:
-            new_entries[idx] = new_entries.get(idx, self.default) + B.entries[idx] 
-        new_default = self.default + B.default
+            candidate = new_entries.get(idx, 0.0) + B.entries[idx]
+            if abs(candidate - new_default) < 1e-16:
+                new_entries.pop(idx, None)
+            else:
+                new_entries[idx] = candidate                
         return SparseMatrix(new_entries, new_default)
 
     def __repr__(self) -> str:
