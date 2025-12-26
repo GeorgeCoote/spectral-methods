@@ -381,21 +381,6 @@ class FiniteSparseMatrix:
             Shallow copy of matrix. 
         '''
         return FiniteSparseMatrix(self.entries.copy(), self.default, self.tolerance)
-
-    def deepcopy(self) -> FiniteSparseMatrix:
-        '''
-        Create deep copy of matrix. 
-
-        Parameters
-        -------------
-        None
-
-        Returns
-        -------------
-        FiniteSparseMatrix
-            Deep copy of matrix. 
-        '''
-        return FiniteSparseMatrix(self.entries.deepcopy(), self.default, self.tolerance)
         
     def get_default(self) -> Union[float, int, complex, Fraction]:
         '''
