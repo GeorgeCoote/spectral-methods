@@ -45,9 +45,9 @@ class FiniteSparseMatrix:
         self.entries = entries
         self.default = default 
         self.tolerance = tolerance
-        self.scalar_type = Union[float, int, complex, Fraction]
-        self.dict_type =  dict[tuple[int, int], self.scalar_type]
-        self.tol_type = Union[float, Fraction]
+        self.scalar_type = Union[float, int, complex, Fraction] # type of entries of matrix
+        self.dict_type =  dict[tuple[int, int], self.scalar_type] # type of dictionary of specified values 
+        self.tol_type = Union[float, Fraction] # type of tolerance
         
     def __call__(self, i : int, j : int) -> self.scalar_type:
         '''
