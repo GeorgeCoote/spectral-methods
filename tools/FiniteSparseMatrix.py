@@ -143,17 +143,18 @@ class FiniteSparseMatrix:
         TypeError
             If c cannot be interpreted as a scalar.
         '''
+        A = self
         if not isinstance(c, (float, int, complex, Fraction)):
             raise TypeError("Cannot multiply FiniteSparseMatrix with non-scalar. Acceptable scalar types are float, int, complex, fractions.Fraction")
             
-        if c < self.tolerance:
-            # if c < tolerance, then we treat c = 0 and hence output the zero matrix
+        if abs(c) < self.tolerance:
+            # if abs(c) < tolerance, then we treat c = 0 and hence output the zero matrix
             return FiniteSparseMatrix({}, 0.0)
             
         else:
             # else, we multiply all elements of the matrix (including the defaults) by c. 
-            new_entries = {key : c*val for key, val in self.entries.items()}
-            new_default = c*self.default
+            new_entries = {key : c*val for key, val in A.entries.items()}
+            new_default = c*A.default
             return FiniteSparseMatrix(new_entries, new_default)
 
     def __matmul__(self, B : 'FiniteSparseMatrix') -> 'FiniteSparseMatrix':
@@ -189,6 +190,7 @@ class FiniteSparseMatrix:
         return FiniteSparseMatrix(new_entries, 0.0)
 
     def __sub__(self, B : 'FiniteSparseMatrix') -> 'FiniteSparseMatrix':
+        A = self
         return A + (-1)*B
 
     def __repr__(self) -> str:
