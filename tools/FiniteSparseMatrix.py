@@ -196,7 +196,7 @@ class FiniteSparseMatrix:
 
         # note that if A @ B = (c_ij), we have c_ij = Σ_k a_ik b_kj. Initially, this is an infinite sum and infinitely many (i, j) are concerned.
         # [1] Note that c_ij can only be non-zero if both the ith row of A and the jth column of B are non-zero. 
-        # [2] furthermore, we only need to run over the non-zero columns of A and the non-zero rows of B, restricting the k that we need to sum over.
+        # [2] furthermore, we only need k to run over the non-zero columns of A and the non-zero rows of B, restricting the sum to finitely many non-zero terms.
         
         A_non_zero_rows = set(elt[0] for elt, _ in A.entries.items()) # create a set of the indices of the non-zero rows of A
         
