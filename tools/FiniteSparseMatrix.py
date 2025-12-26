@@ -1,11 +1,69 @@
+from typing import Union
+
 class FiniteSparseMatrix:
-    def __init__(self, entries : dict[tuple[int, int], float], default : float = 0.0, tolerance : float = 1e-16) -> None:
+    '''
+    Class representing a sparse matrix with only finitely many non-zero entries. 
+
+    Demonstrates how a matrix may be represented as a callable, with functions included to enable arithmetic. 
+    '''
+    def __init__(self, entries : dict[tuple[int, int], float], default : Union[float, int] = 0.0, tolerance : float = 1e-16) -> None:
+        '''
+        Initialises the matrix by setting object attributes.
+
+        Parameters
+        -------------
+        entries : dict[tuple[int, int], float]
+            Dictionary giving the non-zero entries of the matrix. Keys are the indices (i, j) of the non-zero elements, and the values are the corresponding elements.
+        default : Union[float, int]
+            Gives the "default value" for the unspecified elements of the matrix. Sparse matrices typically have these equal to zero. Can be float or int.
+            
+            Default value is 0.0
+        tolerance : float
+            We recognize the x = 0 if x < tolerance to account for floating-point imprecision. Should be a very small number.
+
+            Default value is 1e-16.
+
+        Returns
+        -------------
+        None
+
+        Raises
+        -------------
+        TypeError
+            if default is not float or int
+            if tolerance is not float
+        '''
+        if not isinstance(default, (float, int)):
+            raise TypeError("Default value must be float or int.")
+        if not isinstance(tolerance, float):
+            raise TypeError("Tolerance must be float.")
         self.entries = entries
         self.default = default 
         self.tolerance = tolerance
         
     def __call__(self, i : int, j : int) -> float:
-        return self.entries.get((i, j), self.default)
+        '''
+        Allows a FiniteSparseMatrix to be used as a callable. 
+
+        If A is a FiniteSparseMatrix, then A(i, j) gives the (i, j)th element if it is a specified element in A.entries, else it will return the default value.
+
+        Parameters
+        -------------
+        i : int
+            Gives the row number of the requested element.
+        j : int
+            Gives the column number of the requested element.
+
+        Returns
+        -------------
+        float
+            The desired matrix element.
+
+        Raises
+        -------------
+        None
+        '''
+        return self.entries.get((i, j), self.default) # tries self.entries[(i, j)]. if (i, j) is not a key in self.entries then we return self.default.
     
     def __add__(self, B : 'FiniteSparseMatrix') -> 'FiniteSparseMatrix':
         new_default = self.default + B.default
