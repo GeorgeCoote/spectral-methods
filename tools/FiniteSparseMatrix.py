@@ -9,7 +9,7 @@ class FiniteSparseMatrix:
     
     Allows for the space-efficient storage of matrices with mostly identical values. 
 
-    Throughout this documentation, the zero entries will be called "defaultly valued" and the non-zero entries will be called "specified". 
+    Throughout this documentation, the zero entries will be called "defaultly valued" and the non-zero entries will be called "specified". To allow for flexibility, we will allow non-zero default values.
     '''
     def __init__(self, entries : dict[tuple[int, int], Union[float, int, complex, Fraction]], default : Union[float, int, complex, Fraction] = 0.0, tolerance : Union[float, Fraction] = 1e-16) -> None:
         '''
