@@ -158,6 +158,31 @@ class FiniteSparseMatrix:
             new_default = c*A.default
             return FiniteSparseMatrix(new_entries, new_default, self.tolerance)
 
+    def __mul__(self, c : Union[float, int, complex, Fraction]) -> 'FiniteSparseMatrix':
+        '''
+        Allows right multiplication of FiniteSparseMatrix by a scalar by overloading the * operator.
+
+        In the following, we write A = self for simplicity.
+
+        Given a scalar multiple c, we return A*c = c*A as a FiniteSparseMatrix.
+        
+        Parameters
+        -------------
+        c : float, int, complex or Fraction
+            Gives the scalar multiple.
+
+        Returns
+        -------------
+        FiniteSparseMatrix
+            A*c as a FiniteSparseMatrix.
+
+        Raises
+        -------------
+        TypeError
+            If c cannot be interpreted as a scalar.
+        '''
+        return self.__rmul__(c)
+
     def __matmul__(self, B : 'FiniteSparseMatrix') -> 'FiniteSparseMatrix':
         '''
         Allows multiplication of the FiniteSparseMatrix by a FiniteSparseMatrix by overloading the @ operator. 
