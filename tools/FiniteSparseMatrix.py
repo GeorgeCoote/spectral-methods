@@ -203,8 +203,8 @@ class FiniteSparseMatrix:
         for idx, val in new_entries.items():
             self.entries[idx] = val
 
-    def pop(self, pos : dict[tuple[int, int], Union[float, int, complex, Fraction]]) -> None:
-        self.entries.pop(pos, None)
+    def pop(self, pos : dict[tuple[int, int], Union[float, int, complex, Fraction]]) -> Union[None, float, int, complex, Fraction]:
+        return self.entries.pop(pos, None)
     
     def get_default(self):
         return self.default
