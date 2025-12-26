@@ -107,7 +107,7 @@ class FiniteSparseMatrix:
         new_tolerance = min(A.tolerance, B.tolerance)
         
         for idx in smaller.entries:
-            candidate = new_entries.get(idx, 0.0) + smaller.entries[idx]
+            candidate = new_entries.get(idx, bigger.default) + smaller.entries[idx]
             if abs(candidate - new_default) < new_tolerance: 
                 # if the sum is equal to the new default up to the specified tolerance, we treat it as a default value and hence pop it from the dictionary of specified values
                 new_entries.pop(idx, None)
