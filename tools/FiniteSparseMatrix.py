@@ -146,7 +146,7 @@ class FiniteSparseMatrix:
         if not isinstance(c, (float, int, complex, Fraction)):
             raise TypeError("Cannot multiply FiniteSparseMatrix with non-scalar. Acceptable scalar types are float, int, complex, fractions.Fraction")
             
-        if abs(c) < self.tolerance:
+        if abs(c) < A.tolerance:
             # if abs(c) < tolerance, then we treat c = 0 and hence output the zero matrix
             return FiniteSparseMatrix({}, 0.0)
             
