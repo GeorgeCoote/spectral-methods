@@ -366,7 +366,37 @@ class FiniteSparseMatrix:
             The matrix element at pos. 
         '''
         return self.entries.pop(pos, self.default)
-    
+
+    def copy(self) -> FiniteSparseMatrix:
+        '''
+        Create shallow copy of matrix. 
+
+        Parameters
+        -------------
+        None
+
+        Returns
+        -------------
+        FiniteSparseMatrix
+            Shallow copy of matrix. 
+        '''
+        return FiniteSparseMatrix(self.entries.copy(), self.default, self.tolerance)
+
+    def deepcopy(self) -> FiniteSparseMatrix:
+        '''
+        Create deep copy of matrix. 
+
+        Parameters
+        -------------
+        None
+
+        Returns
+        -------------
+        FiniteSparseMatrix
+            Deep copy of matrix. 
+        '''
+        return FiniteSparseMatrix(self.entries.deepcopy(), self.default, self.tolerance)
+        
     def get_default(self) -> Union[float, int, complex, Fraction]:
         '''
         Returns default value of matrix. Basic getter.
