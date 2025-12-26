@@ -1,7 +1,8 @@
 class FiniteSparseMatrix:
-    def __init__(self, entries : dict[tuple[int, int], float], default : float = 0.0):
+    def __init__(self, entries : dict[tuple[int, int], float], default : float = 0.0, tolerance : float = 1e-16) -> None:
         self.entries = entries
         self.default = default 
+        self.tolerance = tolerance
         
     def __call__(self, i : int, j : int) -> float:
         return self.entries.get((i, j), self.default)
@@ -15,7 +16,7 @@ class FiniteSparseMatrix:
         
         for idx in smaller.entries:
             candidate = new_entries.get(idx, 0.0) + smaller.entries[idx]
-            if abs(candidate - new_default) < 1e-16:
+            if abs(candidate - new_default) < self.tolerance:
                 new_entries.pop(idx, None)
                 
             else:
@@ -24,7 +25,7 @@ class FiniteSparseMatrix:
         return FiniteSparseMatrix(new_entries, new_default)
 
     def __mul__(self, c : float) -> 'FiniteSparseMatrix':
-        if c < 1e-16:
+        if c < self.tolerance:
             return FiniteSparseMatrix({}, 0.0)
             
         else:
@@ -59,7 +60,7 @@ class FiniteSparseMatrix:
                 for k in range(0, upper_bound):
                     candidate += self(i, k)*B(k, j)
                     
-                if abs(candidate) > 1e-16:
+                if abs(candidate) > self.tolerance:
                     new_entries[(i, j)] = candidate
 
         return FiniteSparseMatrix(new_entries, 0.0)
