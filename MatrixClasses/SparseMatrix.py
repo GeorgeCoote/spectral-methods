@@ -260,6 +260,29 @@ class SparseMatrix:
             String to print. 
         '''
         return f"SparseMatrix({self.entries}, {self.f}, {self.tolerance})"
+
+    def T(self) -> 'SparseMatrix':
+        '''
+        Compute the transpose of the matrix A = (a_ij) = self.
+
+        Returns a matrix B = (b_ij) satisfying b_ij = a_ji. We write B = A^T.
+
+        Note that if a_ij = 0 whenever either i > f(j) or j > f(i), we certainly have b_ij = a_ji = 0 whenever i > f(j) or j > f(i) by swapping the roles of i and j.
+
+        Hence, the same f can be used for B.
+        
+        Parameters
+        -------------
+        None
+
+        Returns
+        -------------
+        SparseMatrix
+            Returns the matrix B = A^T.
+        '''
+        A = self
+        new_entries = lambda i, j : A.entries(j, i)
+        return SparseMatrix(new_entries, A.f, A.tolerance)
     
     def get_entries(self) -> Callable[[int, int], Union[float, int, complex, Fraction]]:
         '''
@@ -336,7 +359,7 @@ class SparseMatrix:
         '''
         return self.tolerance 
     
-    def set_tolerance(self, tolerance : Union[float, Fraction]):
+    def set_tolerance(self, tolerance : Union[float, Fraction]) -> None:
          '''
         Changes tolerance of matrix. Basic setter.
 
