@@ -205,7 +205,7 @@ class SparseMatrix:
         '''
         A = self 
         
-        if not isinstance(B, FiniteSparseMatrix):
+        if not isinstance(B, SparseMatrix):
             raise TypeError("Cannot add SparseMatrix with object not of SparseMatrix type.")
         
         new_entries = lambda i, j : A.entries(i, j) - B.entries(i, j)
