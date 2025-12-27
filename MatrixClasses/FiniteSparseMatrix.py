@@ -315,7 +315,30 @@ class FiniteSparseMatrix:
             String to print. 
         '''
         return f"FiniteSparseMatrix({len(self.entries)} entries, default {self.default})"
-       
+
+    def T(self) -> 'FiniteSparseMatrix':
+        '''
+        Compute the transpose of the matrix A = (a_ij) = self.
+
+        Returns a matrix, coded as a FiniteSparseMatrix, B = (b_ij) satisfying b_ij = a_ji. We write B = A^T.
+
+        B inherits the same default and tolerance from A.
+        
+        Parameters
+        -------------
+        None
+
+        Returns
+        -------------
+        SparseMatrix
+            Returns the matrix B = A^T.
+        '''
+        A = self
+        new_entries = {}
+        for (i, j), val in A.items():
+            new_entries[(j, i)] = val 
+        return FiniteSparseMatrix(new_entries, A.default, A.tolerance)
+        
     def get_entries(self) -> dict[tuple[int, int], Union[float, int, complex, Fraction]]:
         '''
         Returns the dictionary of specified elements. 
