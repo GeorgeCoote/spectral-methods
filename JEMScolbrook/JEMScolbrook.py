@@ -171,6 +171,7 @@ def _find_window_compInvg(n : int, y : float, g : Callable[[float], float], init
         raise RuntimeError(f"max_iter ({max_iter}) exceeded. Last checked g({max_iter}) = {g(max_iter)}. Consider optimizing init_guess.")
     return j
 
+# ALGORITHM 1.1 (slow)
 def CompInvg_slow(n : int, y : float, g : Callable[[float], float], max_iter : int = config.max_iter, init_guess : int = config.init_guess, float_tolerance : float = config.float_tolerance) -> Fraction:
     '''
     Approximate g^(-1)(y) using a discrete mesh of size 1/n. Specifically, we find the least k such that g(k/n) > y and hence give an approximation to g^(-1)(y) to precision 1/n. 
@@ -224,6 +225,7 @@ def CompInvg_slow(n : int, y : float, g : Callable[[float], float], max_iter : i
         if g(k/n) > y + float_tolerance:
             return Fraction(k, n) # using fraction to avoid floating point errors
 
+# ALGORITHM 1.1
 def CompInvg(n : int, y : float, g : Callable[[float], float], max_iter : int = config.max_iter, init_guess : int = config.init_guess, float_tolerance : float = config.float_tolerance) -> Fraction:
     '''
     Approximate g^(-1)(y) using a discrete mesh of size 1/n. Specifically, we find the least k such that g(k/n) > y and hence give an approximation to g^(-1)(y) to precision 1/n. 
@@ -290,6 +292,7 @@ def CompInvg(n : int, y : float, g : Callable[[float], float], max_iter : int = 
     
     return Fraction(left, n)
 
+# ALGORITHM 1.2
 def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex, tuple[Fraction, Fraction]], f : Callable[[int], int], fn : int = None, max_iter : int = config.max_iter, float_tolerance : float = config.float_tolerance) -> Fraction:
     '''
     Approximate norm(R(z, A))^(-1) with mesh size 1/n given dispersion f
@@ -378,7 +381,6 @@ def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex,
     
     return Fraction(l, n) # using fraction to avoid floating point errors
 
-# grid generation 
 def _input_validation_generate_grid(n : int) -> None:
     '''
     Input validation for generate_grid and generate_grid_slow. Not intended to be called directly. 
@@ -503,6 +505,7 @@ def intersect_grid_with_ball(n : int, rad : Fraction, centre : tuple[Fraction, F
         if (w_j[1] - centre[1])*(w_j[1] - centre[1]) + (w_j[0] - centre[0])*(w_j[0] - centre[0]) <= r2 # if |w_j - z|^2 <= r^2. We check squares so we are comparing rational numbers rather than floats.
     ]
 
+# ALGORITHM 1.3
 def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Callable[[float], float], f : Callable[[int], int], fn : int = None, c : Callable[[int], Fraction], c_n : Fraction = None) -> tuple[list[tuple[Fraction, Fraction]], Fraction]:
     '''
     Computes a tuple consisting of an approximation to the spectrum of the matrix input, as well as a bound on the error of this approximation. 
@@ -592,6 +595,7 @@ def _validate_eps(eps : Union[float, Fraction, int]) -> Fraction:
         print("WARNING: Trying to convert float to Fraction. Numerators and denominators will likely be large and non-exact. Recommend pre-processing")
         return Fraction(eps) # convert float to fraction
 
+# ALGORITHM 2
 def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int, f : Callable[[int], int], c : Callable[[int], Fraction], fn : int = None, c_n : Fraction = None):
     '''
     Computes an nth order approximation to the epsilon-pseudospectrum.
@@ -633,5 +637,6 @@ def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int
         for z in grid 
         if DistSpec(matrix, n, z, f, fn) + c_n < eps
     ]
+
 
 
