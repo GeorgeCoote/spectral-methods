@@ -178,12 +178,10 @@ class SparseMatrix:
         '''
         return self.__rmul__(c)
     
-    def __matmul__(self, B : 'SparseMatrix') -> Callable[[int, int], Union[float, int, complex, Fraction]:
+    def __matmul__(self, B : 'SparseMatrix') -> 'SparseMatrix':
         '''
         Allows multiplication of the SparseMatrix by a SparseMatrix by overloading the @ operator. 
-        
-        Note that the result may not be sparse, so only the callable associated with the matrix is given.
-
+                
         Parameters
         -------------
         B : SparseMatrix
@@ -200,16 +198,23 @@ class SparseMatrix:
             If B is not a SparseMatrix.
         ''' 
         A = self 
-        # write A @ B = c_ij where c_ij = Σ_k a_ik b_kj. This sum initially involves infinitely many k.
-        # since a_ik = 0 for k > f(i) and b_kj = 0 for k > f(j), we have a_ij b_kj = 0 for k > min(A.f(i), B.f(j))
-        # hence we sum from k = 0 to k = min(A.f(i), B.f(j))
+
+        # see readme for explanation
+
+        A_running_max = lambda i : max(A.f(k) for k <= A.f(i))
+        B_running_max = lambda i : max(B.f(k) for k <= B.f(i))
+        new_f = lambda i : max(A_running_max(i), B_running_max(i))
+
         def new_entries(i : int, j : int) -> Union[float, int, complex, Fraction]:
             s = 0
-            upper_bound = min(A.f(i), B.f(j)) + 1
+            upper_bound = min(A.f(i), B.f(j)) + 1 
             for k in range(0, upper_bound):
                 s += A(i, k)*B(k, j)
             return s
-        return new_entries 
+
+        new_tolerance = min(A.tolerance, B.tolerance)
+
+        return SparseMatrix(new_entries, new_f, new_tolerance)
         
     def __sub__(self, B : 'SparseMatrix') -> 'SparseMatrix':
         '''
