@@ -273,20 +273,22 @@ def CompInvg(n : int, y : float, g : Callable[[float], float], max_iter : int = 
     # binary search
     left = j*n 
     if g(left/n) > y + float_tolerance:
-        return left 
+        return Fraction(left, n) 
     right = (j + 1)*n 
     
     while left <= right:
         k = (left + right)//2 
         
         if g(k/n) <= y + float_tolerance and g((k + 1)/n) > y + float_tolerance: 
-            return k + 1
+            return Fraction(k + 1, n)
         
         elif g(k/n) <= y + float_tolerance and g((k + 1)/n) <= y + float_tolerance:
             left = k + 1
         
         elif g(k/n) > y + float_tolerance:
             right = k - 1 
+    
+    return Fraction(left, n)
 
 #DistSpec
 def DistSpec_slow(matrix : Callable[[int, int], complex], n : int, z : Union[complex, tuple[Fraction, Fraction]], f : Callable[[int], int], fn : int = None, max_iter : int = config.max_iter, float_tolerance : float = config.float_tolerance) -> Fraction:
@@ -398,8 +400,8 @@ def generate_grid_slow(n : int) -> list[complex]:
     
     Returns 
     -------------
-    list[complex]
-        list of complex numbers corresponding to Grid(n) 
+    list[tuple[Fraction, Fraction]]
+        list of tuples of Fractions corresponding to complex numbers in Grid(n)  
     
     Raises 
     -------------
@@ -415,7 +417,7 @@ def generate_grid_slow(n : int) -> list[complex]:
     _input_validation_generate_grid(n)
     # return 
     return [
-        complex(x, y)/n 
+        (Fraction(x, n), Fraction(y, n))
         for x in range(-n*n, n*n + 1) 
         for y in range(-n*n, n*n + 1) 
         if x*x + y*y <= n**4
@@ -537,14 +539,14 @@ def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Callable[[fl
     
     fn = f(n) if fn is None else fn # pre-compute f(n) to avoid re-computation in loop if it is not passed as pre-computed parameter
     _validate_f(f, n, fn) # check f
-    c_n = c(n) if c_n is None else c_ # pre-compute c_n to avoid re-computation in loop if it is not passed as pre-computed parameter
+    c_n = c(n) if c_n is None else c_n # pre-compute c_n to avoid re-computation in loop if it is not passed as pre-computed parameter
     grid = generate_grid(n)
     cur_min = None 
     E_n = 0
     Gamma_n = []
     for z in grid:
         reset_gamma = False
-        Fz = DistSpec(matrix, n, z, f)
+        Fz = DistSpec(matrix, n, z, f, fn)
         W_z = []
         
         if Fz*(z[0]*z[0] + z[1]*z[1] + 1) <= 1:
@@ -569,6 +571,8 @@ def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Callable[[fl
     for z in Gamma_n:
         # since Gamma_n may be very large, we avoid creating a new list.  
         E_n = max(E_n, CompInvg(n, DistSpec(matrix, n, z, fn) + c_n, g))
+    
+    return Gamma_n, E_n
 
 def _validate_eps(eps : Union[float, Fraction, int]) -> Fraction:
     '''
@@ -621,13 +625,10 @@ def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int
     grid = generate_grid(n)
     fn = f(n) if fn is None else fn # pre-compute f(n) to save DistSpec the trouble of re-computing it every time it is called 
     _validate_f(f, n, fn) # check f
-    c_n = c(n) if c_n is None else c_n # pre-compute c_n to save DistSpec the trouble of re-computing it every time it is called
+    c_n = c(n) if c_n is None else c_n # pre-compute c_n
     return [
         z 
         for z in grid 
-        if DistSpec(matrix, n, z, f, fn, c, c_n) + c_n < eps
+        if DistSpec(matrix, n, z, f, fn) + c_n < eps
     ]
-        
-
-
 
