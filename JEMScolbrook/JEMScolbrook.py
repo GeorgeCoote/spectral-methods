@@ -333,11 +333,13 @@ def DistSpec_slow(matrix : Callable[[int, int], complex], n : int, z : Union[com
     
     Big-O Complexity 
     -------------
-    O(f(n)*n^2 + max_iter*n^3) - since max_iter dominates f(n) this will scale more like O(max_iter*n^3). 
+    O(n^3 + n) 
     
-    first term: O(f(n)*n) for building the matrices, O(f(n)*n^2) from matrix multiplication.
-    
-    second term: eigenvalue search is O(n^3), we do this up to max_iter times.
+    1. Computing eigenvalues is O(n^3)
+    2. Finding the minimum of these eigenvalues is O(n) + O(n) = O(n)
+    3. Since l^2/n^2 is approximately min_eigval, l is approximately n * sqrt(min_eigval) = O(n) 
+    4. Hence we will then do O(n) iterations to find l 
+    5. Hence the final complexity is O(n^3) + O(n) + O(n) = O(n^3 + n)
     '''
     fn = f(n) if fn is None else fn # pre-compute f(n) in case it is expensive
     
@@ -363,13 +365,17 @@ def DistSpec_slow(matrix : Callable[[int, int], complex], n : int, z : Union[com
     eigvals_S = np.linalg.eigvalsh(S) 
     eigvals_T = np.linalg.eigvalsh(T)
     
+    min_eigvals_S = min(eigvals_S)
+    min_eigvals_T = min(eigvals_T)
+    
+    min_eigval = min(min_eigvals_S, min_eigvals_T)
+    
     while v and l < max_iter:
         l += 1
-        l2 = l*l  
-        n2 = n*n
-        S_minus_l2_over_n2_posdef = np.all(eigvals_S > l2/n2 + float_tolerance) # check whether S - l^2/n^2 I is positive definite. This represents an upper bound on distance to the spectrum
-        T_minus_l2_over_n2_posdef = np.all(eigvals_T > l2/n2 + float_tolerance) # check whether T - l^2/n^2 I is positive definite. This represents an upper bound on distance to the spectrum
-        v = S_minus_l2_over_n2_posdef and T_minus_l2_over_n2_posdef
+        approx = (l*l)/(n*n)
+        
+        if min_eigval <= approx + float_tolerance:
+            break
     
     if l == max_iter:
         raise RuntimeError(f"max_iter ({max_iter}) exceeded")
@@ -590,7 +596,7 @@ def _validate_eps(eps : Union[float, Fraction, int]) -> Fraction:
         print("WARNING: Trying to convert float to Fraction. Numerators and denominators will likely be large and non-exact. Recommend pre-processing")
         return Fraction(eps) # convert float to fraction
 
-def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int, f : Callable[[int], int], fn : int = None, c : Callable[[int], Fraction], c_n : Fraction = None):
+def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int, f : Callable[[int], int], c : Callable[[int], Fraction], fn : int = None, c_n : Fraction = None):
     '''
     Computes an nth order approximation to the epsilon-pseudospectrum.
     
@@ -604,10 +610,10 @@ def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int
         degree of approximation
     f : Callable[[int], int]
         a dispersion control for the matrix, accepting ints and giving ints. Must satisfy f(n) >= n + 1 and be increasing.
-    fn : int 
-        allows for the value of f(n) to be pre-loaded, for example if this method is to be called in a loop and computing f is expensive. It is never checked that fn = f(n).
     c : Callable[[int], Fraction]
         a sequence satisfying D_(f, n)(A) <= c_n 
+    fn : int 
+        allows for the value of f(n) to be pre-loaded, for example if this method is to be called in a loop and computing f is expensive. It is never checked that fn = f(n).
     c_n : Fraction 
         allows for the value of c_n to be pre-loaded, for example if this method is to be called in a loop and computing c is expensive. It is never checked whether c_n = c(n).
     
@@ -631,6 +637,3 @@ def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int
         for z in grid 
         if DistSpec(matrix, n, z, f, fn) + c_n < eps
     ]
-
-
-
