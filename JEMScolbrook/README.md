@@ -1,7 +1,9 @@
 ## Mathematical pre-requisites
 
-A first course in functional analysis, including some spectral theory is useful. My choice of texts would be Conway's A Course in Functional Analysis and Hislop/Segal's Introduction to Spectral Theory. An understanding of finite-dimensional linear algebra and topological vocabulary will be essential. You should be familiar with the following terms. 
+A first course in functional analysis, including some spectral theory is useful. My choice of texts would be Conway's A Course in Functional Analysis and Hislop/Segal's Introduction to Spectral Theory. An understanding of finite-dimensional linear algebra and topological vocabulary will be essential. You should be familiar with the following terms/ideas. 
 
+* The distance of a point to a closed set
+* Continuous function
 * Linear operator
 * Hilbert Space
 * Closed operator
