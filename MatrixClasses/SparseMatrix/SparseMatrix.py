@@ -189,8 +189,8 @@ class SparseMatrix:
 
         Returns
         -------------
-        Callable[[int, int], Union[float, int, complex, Fraction]
-            Returns the callable representing the matrix elements of A @ B.
+        SparseMatrix
+            Gives A @ B.
 
         Raises
         -------------
@@ -198,6 +198,9 @@ class SparseMatrix:
             If B is not a SparseMatrix.
         ''' 
         A = self 
+
+        if not isinstance(B, SparseMatrix):
+            raise TypeError("Cannot multiply SparseMatrix with object not of SparseMatrix type.")
 
         # see readme for explanation
 
