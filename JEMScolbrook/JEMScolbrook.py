@@ -290,13 +290,10 @@ def CompInvg(n : int, y : float, g : Callable[[float], float], max_iter : int = 
     
     return Fraction(left, n)
 
-#DistSpec
-def DistSpec_slow(matrix : Callable[[int, int], complex], n : int, z : Union[complex, tuple[Fraction, Fraction]], f : Callable[[int], int], fn : int = None, max_iter : int = config.max_iter, float_tolerance : float = config.float_tolerance) -> Fraction:
+def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex, tuple[Fraction, Fraction]], f : Callable[[int], int], fn : int = None, max_iter : int = config.max_iter, float_tolerance : float = config.float_tolerance) -> Fraction:
     '''
     Approximate norm(R(z, A))^(-1) with mesh size 1/n given dispersion f
-    
-    _slow: Brute force method, checks each l individually and computes all eigenvalues before concluding on positive definiteness.
-    
+        
     Parameters 
     -------------
     matrix : Callable[[int, int], complex]
@@ -359,8 +356,6 @@ def DistSpec_slow(matrix : Callable[[int, int], complex], n : int, z : Union[com
     T_size = T.shape[0] # get size of T to identify suitable identity matrix 
     id_T = np.identity(T_size)
     
-    v = True
-    l = 0
     eigvals_S = np.linalg.eigvalsh(S) 
     eigvals_T = np.linalg.eigvalsh(T)
     
@@ -369,13 +364,15 @@ def DistSpec_slow(matrix : Callable[[int, int], complex], n : int, z : Union[com
     
     min_eigval = min(min_eigvals_S, min_eigvals_T)
     
-    while v and l < max_iter:
-        l += 1
-        approx = (l*l)/(n*n)
-        
-        if min_eigval <= approx + float_tolerance:
-            break
+    threshold = min_eigval - float_tolerance 
     
+    if threshold <= 0:
+        return Fraction(1, n) 
+    
+    else:
+        l = math.ceil(n * sqrt(threshold))
+        return Fraction(l, n)
+
     if l == max_iter:
         raise RuntimeError(f"max_iter ({max_iter}) exceeded")
     
@@ -636,4 +633,5 @@ def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int
         for z in grid 
         if DistSpec(matrix, n, z, f, fn) + c_n < eps
     ]
+
 
