@@ -69,41 +69,41 @@ class FiniteSparseMatrix:
         return self.entries.get((i, j), self.default) # tries self.entries[(i, j)]. if (i, j) is not a key in self.entries then we return self.default.
     
     def __eq__(self, B : 'FiniteSparseMatrix') -> bool:
-    '''
-    Checks equality of finite sparse matrices. 
+        '''
+        Checks equality of finite sparse matrices. 
+        
+        This checks that the dictionaries and default values are equal, the latter up to the given float_tolerance. 
+        
+        Parameters
+        -------------
+        B : FiniteSparseMatrix 
+            The FiniteSparseMatrix to check equality with. 
+        
+        Returns
+        -------------
+        bool 
+            Representing whether A == B
+        
+        Raises
+        -------------
+        TypeError 
+            Cannot make equality comparison with FiniteSparseMatrix.
+        '''
+        A = self 
+        
+        tol = min(A.tolerance, B.tolerance) 
     
-    This checks that the dictionaries and default values are equal, the latter up to the given float_tolerance. 
+        if not abs(A.default - B.default) < tol:
+            return False
     
-    Parameters
-    -------------
-    B : FiniteSparseMatrix 
-        The FiniteSparseMatrix to check equality with. 
-    
-    Returns
-    -------------
-    bool 
-        Representing whether A == B
-    
-    Raises
-    -------------
-    TypeError 
-        Cannot make equality comparison with FiniteSparseMatrix.
-    '''
-    A = self 
-    
-    tol = min(A.tolerance, B.tolerance) 
-
-    if not abs(A.default - B.default) < tol:
-        return False
-
-    if not A.keys() == B.keys():
-        return False 
-    
-    for idx, val in A.items():
-        if abs(val - B[idx]) >= tol: 
+        if not A.keys() == B.keys():
             return False 
-    
-    return True
+        
+        for idx, val in A.items():
+            if abs(val - B[idx]) >= tol: 
+                return False 
+        
+        return True
     
     def __add__(self, B : 'FiniteSparseMatrix') -> 'FiniteSparseMatrix': 
         # string 'FiniteSparseMatrix' serves as forward reference since class definition is not complete.
