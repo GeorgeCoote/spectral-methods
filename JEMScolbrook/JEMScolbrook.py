@@ -726,9 +726,10 @@ def TestPseudospec(n1 : int, n2 : int, K_n2 : list[complex], gamma_n1 : Callable
         raise ValueError("epsilon must be non-negative") 
     
     for z in K_n2 
-        if (1 << n_2) * gamma_n1(z) + config.float_tolerance < 1 + eps:
+        if (1 << n2) * gamma_n1(z) + config.float_tolerance < 1 + eps:
             return True 
     
     return False
+
 
 
