@@ -796,11 +796,16 @@ def SpecGap(n1 : int, n2 : int, projected_matrix : np.array, float_tolerance : U
     
     result = False
     for k in range(2, n1 + 1):
-        trunc = projected_matrix[:k, :k]
-        eigvals = sorted(np.linalg.eigvalsh(trunc)) if hermitian else sorted(np.linalg.eigvals(trunc))
-        gap = eigvals[1] - eigvals[0]
-        if gap*(2*n2) <= 1 + float_tolerance:
+        trunc = projected_matrix[:k, :k] # compute P_k A P_k
+        eigvals = sorted(np.linalg.eigvalsh(trunc)) # sorted 
+        gap = eigvals[1] - eigvals[0] # ie. l_k = mu_2^(k) - mu_1^(k)
+        # write J_(n_2)^1 = [0, 1/(2n_2)] and J_(n_2)^2 = (1/n_2, inf) as in the paper. 
+        if gap*(2*n2) <= 1 + float_tolerance: # ie. l_k \in J_(n_2)^1
             result = False 
-        if gap*(n2) > 1 + float_tolerance:
+        if gap*(n2) > 1 + float_tolerance: # ie. l_k \in J_(n_2)^2
             result = True 
+    # as we exit the loop, the present value of result will reflect the maximum k <= n_1
+    # as in the paper, if this k has l_k \in J_(n_2)^1, we will output False, and otherwise we will output True. 
+    # if there is no k such that l_k \in J_(n_1)^1 \cup J_(n_2)^2, then neither of the if conditions will be satisfied and the initial assignment of False will persist.
     return result
+
