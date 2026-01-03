@@ -165,6 +165,7 @@ def _validate_order_approx(n1 : int, n2 : int) -> None:
         raise ValueError("We must have n_1 >= 0")
     if not (n2 >= 0):
         raise ValueError("We must have n_2 >= 0")
+    return 
 
 def _validate_eps(eps : Union[float, Fraction, int]) -> Fraction:
     '''
@@ -183,6 +184,16 @@ def _validate_eps(eps : Union[float, Fraction, int]) -> Fraction:
     if isinstance(eps, float):
         print("WARNING: Trying to convert float to Fraction. Numerators and denominators will likely be large and non-exact. Recommend pre-processing")
         return Fraction(eps) # convert float to fraction
+
+def _validate_matrix_hermitian(matrix : np.array):
+    '''
+    Checks whether input matrix is Hermitian.
+    
+    Not intended to be called directly.
+    '''
+    if not np.array_equal(projected_matrix.getH(), projected_matrix):
+        raise ValueError("A must be Hermitian") 
+    return
 
 # CompInvg
 
@@ -741,7 +752,7 @@ def TestPseudospec(n1 : int, n2 : int, K_n2 : list[complex], gamma_n1 : Callable
     '''
     _validate_order_approx(n1, n2)
     _validate_float_tolerance(float_tolerance)
-    _validate_eps(eps)
+    eps = _validate_eps(eps)
     
     for z in K_n2 
         if (1 << n2) * gamma_n1(z) + float_tolerance < 1 + eps:
@@ -804,6 +815,7 @@ def SpecGap(n1 : int, n2 : int, projected_matrix : np.array, float_tolerance : U
     # as in the paper, if this k has l_k \in J_(n_2)^1, we will output False, and otherwise we will output True. 
     # if there is no k such that l_k \in J_(n_1)^1 \cup J_(n_2)^2, then neither of the if conditions will be satisfied and the initial assignment of False will persist.
     return result
+
 
 
 
