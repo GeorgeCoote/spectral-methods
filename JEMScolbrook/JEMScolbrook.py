@@ -166,6 +166,24 @@ def _validate_order_approx(n1 : int, n2 : int) -> None:
     if not (n2 >= 0):
         raise ValueError("We must have n_2 >= 0")
 
+def _validate_eps(eps : Union[float, Fraction, int]) -> Fraction:
+    '''
+    Validates epsilon as a parameter to compute the epsilon-pseudospectrum. C
+    
+    Checks that epsilon > 0 and also tries to convert integers and floats to rationals. Due to floating point inaccuracy this is likely to be numerically unstable, so warning is thrown.
+    
+    For example, Fraction(0.1) gives Fraction(3602879701896397, 36028797018963968) which is equal to 0.1000000000000000055... May be fine for some purposes.
+    
+    Not intended to be called directly. 
+    '''
+    if eps <= 0:
+        raise ValueError(f"eps cannot be negative. eps = {eps} < 0")
+    if isinstance(eps, int):
+        return Fraction(eps) # convert int to fraction 
+    if isinstance(eps, float):
+        print("WARNING: Trying to convert float to Fraction. Numerators and denominators will likely be large and non-exact. Recommend pre-processing")
+        return Fraction(eps) # convert float to fraction
+
 # CompInvg
 
 def _input_validation_compInvg(n : int, y : float, g : Callable[[float], float], float_tolerance : float = config.float_tolerance) -> None:
@@ -609,22 +627,6 @@ def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Callable[[fl
     
     return Gamma_n, E_n
 
-def _validate_eps(eps : Union[float, Fraction, int]) -> Fraction:
-    '''
-    Validates epsilon. Checks that epsilon > 0 and also tries to convert integers and floats to rationals. Due to floating point inaccuracy this is likely to be numerically unstable, so warning is thrown.
-    
-    For example, Fraction(0.1) gives Fraction(3602879701896397, 36028797018963968) which is equal to 0.1000000000000000055... May be fine for some purposes.
-    
-    Not intended to be called directly. 
-    '''
-    if eps <= 0:
-        raise ValueError(f"eps cannot be negative. eps = {eps} < 0")
-    if isinstance(eps, int):
-        return Fraction(eps) # convert int to fraction 
-    if isinstance(eps, float):
-        print("WARNING: Trying to convert float to Fraction. Numerators and denominators will likely be large and non-exact. Recommend pre-processing")
-        return Fraction(eps) # convert float to fraction
-
 # ALGORITHM 2
 def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int, f : Callable[[int], int], c : Callable[[int], Fraction], fn : int = None, c_n : Fraction = None):
     '''
@@ -691,9 +693,11 @@ def TestSpec(n1 : int, n2 : int, K_n2 : list[float], gamma_n1 : Callable[[comple
     Raises 
     -------------
     TypeError
-        If n1 or n2 is not an integer. Propagated from _validate_TestSpec.
+        If n1 or n2 is not an integer. Propagated from _validate_order_approx.
+        If float_tolerance is not a float or Fraction. Propagated from _validate_float_tolerance.
     ValueError
-        If n1 or n2 is negative. 
+        If n1 or n2 is negative. Propagated from _validate_order_approx.
+        If float_tolerance is non-positive. Propagated from _validate_float_tolerance.
     '''
     _validate_TestSpec(n1, n2)
     _validate_float_tolerance(float_tolerance)
@@ -729,9 +733,11 @@ def TestPseudospec(n1 : int, n2 : int, K_n2 : list[complex], gamma_n1 : Callable
     Raises 
     -------------
     TypeError
-        If n1 or n2 is not an integer. Propagated from _validate_TestSpec.
+        If n1 or n2 is not an integer. Propagated from _validate_order_approx.
+        If float_tolerance is not a float or Fraction. Propagated from _validate_float_tolerance.
     ValueError
-        If n1 or n2 is negative. 
+        If n1 or n2 is negative. Propagated from _validate_order_approx.
+        If float_tolerance is non-positive. Propagated from _validate_float_tolerance.
     '''
     _validate_order_approx(n1, n2)
     _validate_float_tolerance(float_tolerance)
@@ -746,7 +752,3 @@ def TestPseudospec(n1 : int, n2 : int, K_n2 : list[complex], gamma_n1 : Callable
             return True 
     
     return False
-
-
-
-
