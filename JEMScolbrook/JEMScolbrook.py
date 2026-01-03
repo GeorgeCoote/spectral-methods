@@ -814,10 +814,3 @@ def SpecGap(n1 : int, n2 : int, projected_matrix : np.array, float_tolerance : U
     # as in the paper, if this k has l_k \in J_(n_2)^1, we will output False, and otherwise we will output True. 
     # if there is no k such that l_k \in J_(n_1)^1 \cup J_(n_2)^2, then neither of the if conditions will be satisfied and the initial assignment of False will persist.
     return result
-
-
-
-
-
-
-
