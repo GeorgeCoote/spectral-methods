@@ -752,3 +752,55 @@ def TestPseudospec(n1 : int, n2 : int, K_n2 : list[complex], gamma_n1 : Callable
             return True 
     
     return False
+
+# ALGORITHM 4
+def SpecGap(n1 : int, n2 : int, projected_matrix : np.array, float_tolerance : Union[float, Fraction] = config.float_tolerance) -> bool:
+    '''
+    Returns an approximation to the truth value of "is the spectrum of A gapped?". A is a Hermitian operator.
+    
+    We say that the spectrum of A is gapped if the minimum of spec(A) is an isolated eigenvalue with multiplicity 1.
+    
+    Parameters
+    -------------
+    n1 : int 
+        The first order of the approximation. 
+    n2 : int 
+        The second order of the approximation. 
+    projected_matrix : np.array 
+        The matrix P_{n1} A P_{n1} given as an np.array, where P_{n1} denotes the projection onto the first n basis elements.
+    float_tolerance : float 
+        error margin for floating point calculations. Defaults to module default (default 1e-10)
+    
+    Returns 
+    -------------
+    bool 
+        An approximation to the truth value of "A is gapped". 
+    
+    Raises 
+    -------------
+    TypeError
+        If n1 or n2 is not an integer. Propagated from _validate_order_approx.
+        If float_tolerance is not a float or Fraction. Propagated from _validate_float_tolerance.
+    ValueError
+        If n1 or n2 is negative. Propagated from _validate_order_approx.
+        If float_tolerance is non-positive. Propagated from _validate_float_tolerance.
+        If projected_matrix is not Hermitian. 
+    '''
+    if not np.array_equal(projected_matrix.getH(), projected_matrix):
+        raise ValueError("A must be Hermitian") 
+    _validate_order_approx(n1, n2)
+    _validate_float_tolerance(float_tolerance)
+   
+    if n1 == 1:
+        return True
+    
+    result = False
+    for k in range(2, n1 + 1):
+        trunc = projected_matrix[:k, :k]
+        eigvals = sorted(np.linalg.eigvalsh(trunc)) if hermitian else sorted(np.linalg.eigvals(trunc))
+        gap = eigvals[1] - eigvals[0]
+        if gap*(2*n2) <= 1 + float_tolerance:
+            result = False 
+        if gap*(n2) > 1 + float_tolerance:
+            result = True 
+    return result
