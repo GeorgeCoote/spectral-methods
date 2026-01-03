@@ -135,7 +135,37 @@ def _validate_f(f : Callable[[int], int], n : int, fn : int = None) -> None:
         raise ValueError(f"f(n) >= n + 1 is not satisfied. (f(n) = {fn}, n + 1 = {n + 1})")
     
     return
+
+def _validate_float_tolerance(float_tolerance : float[Union, Fraction]) -> None:
+    '''
+    Checks whether a specified float_tolerance is valid. 
     
+    float_tolerance must be a float or Fraction, and must have float_tolerance > 0.
+    
+    Not intended to be called directly. 
+    '''
+    if not isinstance(float_tolerance, (float, Fraction)):
+        raise TypeError("float_tolerance must be float or Fraction") 
+    if not (float_tolerance <= 0):
+        raise ValueError("float_tolerance must be positive") 
+    
+    return 
+
+def _validate_order_approx(n1 : int, n2 : int) -> None:
+    '''
+    Input validation for TestSpec and TestPseudospec. Checks that n_1 and n_2 are non-negative integers. 
+    
+    Not intended to be called directly.
+    '''
+    if not isinstance(n1, int):
+        raise TypeError("n_1 must be an int.")
+    if not isinstance(n2, int):
+        raise TypeError("n_2 must be an int.")
+    if not (n1 >= 0):
+        raise ValueError("We must have n_1 >= 0")
+    if not (n2 >= 0):
+        raise ValueError("We must have n_2 >= 0")
+
 # CompInvg
 
 def _input_validation_compInvg(n : int, y : float, g : Callable[[float], float], float_tolerance : float = config.float_tolerance) -> None:
@@ -638,22 +668,6 @@ def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int
         if DistSpec(matrix, n, z, f, fn) + c_n < eps
     ]
 
-# shared type checking for TestSpec and TestPseudospec
-def _validate_TestSpec(n1 : int, n2 : int) -> None:
-    '''
-    Input validation for TestSpec and TestPseudospec. Checks that n_1 and n_2 are non-negative integers. 
-    
-    Not intended to be called directly.
-    '''
-    if not isinstance(n1, int):
-        raise TypeError("n_1 must be an int.")
-    if not isinstance(n2, int):
-        raise TypeError("n_2 must be an int.")
-    if not (n1 >= 0):
-        raise ValueError("We must have n_1 >= 0")
-    if not (n2 >= 0):
-        raise ValueError("We must have n_2 >= 0")
-
 # ALGORITHM 3.1
 def TestSpec(n1 : int, n2 : int, K_n2 : list[float], gamma_n1 : Callable[[complex], float], float_tolerance : float = config.float_tolerance) -> bool:
     '''
@@ -682,6 +696,7 @@ def TestSpec(n1 : int, n2 : int, K_n2 : list[float], gamma_n1 : Callable[[comple
         If n1 or n2 is negative. 
     '''
     _validate_TestSpec(n1, n2)
+    _validate_float_tolerance(float_tolerance)
     
     for z in K_n2:
         if (1 << n2) * gamma_n1(z) + float_tolerance < 1: # note that 1 << n is much cheaper than 2**n for large n. multiply through by 2^(n_2) to avoid comparing small floats.
@@ -718,8 +733,9 @@ def TestPseudospec(n1 : int, n2 : int, K_n2 : list[complex], gamma_n1 : Callable
     ValueError
         If n1 or n2 is negative. 
     '''
-    _validate_TestSpec(n1, n2)
-    
+    _validate_order_approx(n1, n2)
+    _validate_float_tolerance(float_tolerance)
+
     if not isinstance(epsilon, (float, Fraction)):
         raise TypeError("epsilon should be a float or Fraction") 
     if eps < 0:
@@ -730,6 +746,7 @@ def TestPseudospec(n1 : int, n2 : int, K_n2 : list[complex], gamma_n1 : Callable
             return True 
     
     return False
+
 
 
 
