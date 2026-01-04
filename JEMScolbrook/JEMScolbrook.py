@@ -153,7 +153,7 @@ def _validate_float_tolerance(float_tolerance : float[Union, Fraction]) -> None:
 
 def _validate_order_approx(n1 : int, n2 : int) -> None:
     '''
-    Input validation for TestSpec and TestPseudospec. Checks that n_1 and n_2 are non-negative integers. 
+    Input validation for TestSpec and TestPseudoSpec. Checks that n_1 and n_2 are non-negative integers. 
     
     Not intended to be called directly.
     '''
@@ -720,7 +720,7 @@ def TestSpec(n1 : int, n2 : int, K_n2 : list[float], gamma_n1 : Callable[[comple
     return False
 
 # ALGORITHM 3.2
-def TestPseudospec(n1 : int, n2 : int, K_n2 : list[complex], gamma_n1 : Callable[[complex], float], eps : Union[float, Fraction], float_tolerance : float = config.float_tolerance) -> bool:
+def TestPseudoSpec(n1 : int, n2 : int, K_n2 : list[complex], gamma_n1 : Callable[[complex], float], eps : Union[float, Fraction], float_tolerance : float = config.float_tolerance) -> bool:
     '''
     Given (n_1, n_2), an approximation K_n2 to a compact set K, an approximation gamma_n1(z) to gamma(z, A), return an approximation to the truth value of K \cap spec_eps(A) \ne \emptyset.
     
@@ -814,3 +814,4 @@ def SpecGap(n1 : int, n2 : int, projected_matrix : np.array, float_tolerance : U
     # as in the paper, if this k has l_k \in J_(n_2)^1, we will output False, and otherwise we will output True. 
     # if there is no k such that l_k \in J_(n_1)^1 \cup J_(n_2)^2, then neither of the if conditions will be satisfied and the initial assignment of False will persist.
     return result
+
