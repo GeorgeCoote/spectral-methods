@@ -2,7 +2,7 @@
 
 from fractions import Fraction
 from collections.abc import Callable
-from math import isqrt
+from math import isqrt, floor, ceil
 from typing import Union
 import numpy as np
 
@@ -406,7 +406,7 @@ def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex,
     _validate_f(f, n, fn)
     
     if isinstance(z, tuple[Fraction, Fraction]):
-        z = (z[0]+z[1]j)
+        z = complex(z[0], z[1])
         
     # prepare matrices 
     B = _generate_matrix(matrix, fn, n, z) # (A - z I)(1 : f(n))(1 : n)
@@ -565,9 +565,11 @@ def intersect_grid_with_ball(n : int, rad : Fraction, centre : tuple[Fraction, F
     ]
 
 # ALGORITHM 1.3
-def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Callable[[float], float], f : Callable[[int], int], fn : int = None, c : Callable[[int], Fraction], c_n : Fraction = None) -> tuple[list[tuple[Fraction, Fraction]], Fraction]:
+def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Union[Callable[[float], float], None] = None, f : Callable[[int], int], fn : int = None, c : Callable[[int], Fraction], c_n : Fraction = None) -> tuple[list[tuple[Fraction, Fraction]], Fraction]:
     '''
-    Computes a tuple consisting of an approximation to the spectrum of the matrix input, as well as a bound on the error of this approximation. 
+    Computes a tuple consisting of an approximation to the spectrum of the matrix input, as well as a bound on the error of this approximation.
+    
+    The second output, E_n(z), is such that dist(z, spec(A)) <= E_n(z), a guaranteed bound on the distance from the spectrum.
     
     Parameters
     -------------
@@ -575,8 +577,13 @@ def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Callable[[fl
         function N^2 -> C representing a closed infinite matrix.
     n : int 
         degree of approximation 
-    g : Callable[[float], float] 
+    g : Union[Callable[[float], float], None]
         increasing function g : R_+ -> R_+ representing resolvent control. Must satisfy g(0) = 0, g(x) <= x and be monotone increasing. That g(x) <= x or g is monotone is not checked.
+        
+        An input of None is treated as g(x) = x, which works if g(x) is for example self-adjoint.
+        
+        Defaults to None.  
+    
     f : Callable[[int], int]
         a dispersion control for the matrix, accepting ints and giving ints. Must satisfy f(n) >= n + 1 and be increasing.
     fn : int 
@@ -604,19 +611,23 @@ def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Callable[[fl
     fn = f(n) if fn is None else fn # pre-compute f(n) to avoid re-computation in loop if it is not passed as pre-computed parameter
     _validate_f(f, n, fn) # check f
     c_n = c(n) if c_n is None else c_n # pre-compute c_n to avoid re-computation in loop if it is not passed as pre-computed parameter
-    grid = generate_grid(n)
+    
+    grid = generate_grid(n) 
     cur_min = None 
     E_n = 0
     Gamma_n = []
+    
     for z in grid:
         reset_gamma = False
         Fz = DistSpec(matrix, n, z, f, fn)
         W_z = []
         
+        rad = CompInvg(n, Fz, g) if g else Fraction(ceil(n*(y + float_tolerance)), n)
+        
         if Fz*(z[0]*z[0] + z[1]*z[1] + 1) <= 1:
             for w_j in intersect_grid_with_ball(CompInvg(n, Fz, g), z):
                 F_j = DistSpec(matrix, n, w_j, f, fn)
-                cur_min = F_j if cur_min is None else cur_min # if cur_min is still unspecified, take it to be F_j
+                cur_min = F_j if (not cur_min) else cur_min # if cur_min is still unspecified, take it to be F_j
                 
                 if cur_min == F_j: 
                     W_z.append(w_j) 
@@ -632,9 +643,12 @@ def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Callable[[fl
         
         else:
             Gamma_n.extend(W_z)
-    for z in Gamma_n:
-        # since Gamma_n may be very large, we avoid creating a new list.  
-        E_n = max(E_n, CompInvg(n, DistSpec(matrix, n, z, fn) + c_n, g))
+    
+    def E_n(z):
+        if z not in Gamma_n:
+            raise ValueError("Given z is not in Gamma_n")
+        else:
+            return CompInvg(n, DistSpec(matrix, n, z, fn) + c_n, g)
     
     return Gamma_n, E_n
 
@@ -815,3 +829,24 @@ def SpecGap(n1 : int, n2 : int, projected_matrix : np.array, float_tolerance : U
     # if there is no k such that l_k \in J_(n_1)^1 \cup J_(n_2)^2, then neither of the if conditions will be satisfied and the initial assignment of False will persist.
     return result
 
+# ALGORITHM 5
+
+def SpecClass(n1 : int, n2 : int, matrix : Callable[[int, int], complex], f : Callable[[int], int], f_vals : int = None, projected_matrix : np.array = None, Gamma : list[list[tuple[Fraction, Fraction]]] = None, Err : list[Callable[[complex], Fraction]], float_tolerance : Union[float, Fraction] = config.float_tolerance) -> int:
+    if len(Gamma) != n1:
+        raise ValueError(f"List specifying pre-computed Gamma must be of size n1. Input has size {len(Gamma)}")
+    if len(Err) != n1:
+        raise ValueError(f"List specifying pre-computed errors must be of size n1. Input has size {len(Err)}") 
+    if len(f_vals) != n1:
+        raise ValueError(f"List specifying pre-computed dispersion bound f must be of size n1. Input has size {len(f_vals)}")
+    if np.shape(projected_matrix) != (n1, n1):
+        raise ValueError(f"Pre-computed projected_matrix does not have size n1 x n1. Shape is {np.shape(projected_matrix)}")
+    
+    _validate_order_approx(n1, n2)
+    _validate_float_tolerance(float_tolerance)
+    
+    if n1 <= n2:
+        return 1
+    
+    f_vals = f_vals if f_vals else [f(n) for _ in range(1, n1 + 1)]
+    projected_matrix = projected_matrix if projected_matrix else _generate_matrix(matrix, n1, n1, 0)
+    
