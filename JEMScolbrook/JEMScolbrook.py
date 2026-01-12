@@ -30,7 +30,6 @@ class Config:
             Comparison of floats (especially equality) is numerically fragile. To circumvent this, we validate that x > 0 if x > float_tolerance. We validate that x = 0 if x < float_tolerance. 
             
             Default 1e-10
-            
 
         init_guess : int
             Where an integer is being approximated, init_guess is used as its default value. If the integer is expected to be large, one may consider using a
@@ -126,7 +125,7 @@ def _validate_f(f : Callable[[int], int], n : int, fn : int = None) -> None:
     
     Not intended to be called directly. 
     '''
-    fn = f(n) if fn is None else fn 
+    fn = fn if fn else f(n) 
     
     if not (isinstance(fn, int)): # check if f(n) is an integer 
         raise TypeError(f"f(n) ({fn}) is not an int")
@@ -135,6 +134,27 @@ def _validate_f(f : Callable[[int], int], n : int, fn : int = None) -> None:
         raise ValueError(f"f(n) >= n + 1 is not satisfied. (f(n) = {fn}, n + 1 = {n + 1})")
     
     return
+
+def _validate_cn(c : Callable[[int], Union[Fraction, float]], n : int, c_n : Union[Fraction, float] = None) -> Fraction:
+    '''
+    Checks whether c_n represents a valid quantity such that D_(f, n)(A) <= c_n. 
+    
+    Checks that c_n > 0 and that c_n is either a float or Fraction. If c_n is a float, it will be rounded up to a rational of level n. 
+    
+    Not intended to be called directly. 
+    '''
+    c_n = c_n if c_n else c(n) 
+    
+    if not isinstance(c_n, (float, Fraction)):
+        raise TypeError("c_n must be float or Fraction.")
+    
+    if not c_n + config.float_tolerance > 0:
+        raise ValueError("c_n must be non-negative") 
+    
+    if isinstance(c_n, float):
+        print(f"WARNING: Rounding float c_n up to rational of level n")
+        return Fraction(ceil(n*c_n), n)
+    
 
 def _validate_float_tolerance(float_tolerance : float[Union, Fraction]) -> None:
     '''
@@ -151,7 +171,19 @@ def _validate_float_tolerance(float_tolerance : float[Union, Fraction]) -> None:
     
     return 
 
-def _validate_order_approx(n1 : int, n2 : int) -> None:
+def _validate_order_approx(n : int) -> None:
+    '''
+    Input validation for using n as an order of approximation. 
+    
+    Not intended to be called directly.
+    '''
+    if not isinstance(n, int):
+        raise TypeError("n must be an int")
+    if not (n >= 1):
+        raise ValueError("We must have n >= 1")
+    return
+
+def _validate_order_approx_2(n1 : int, n2 : int) -> None:
     '''
     Input validation for TestSpec and TestPseudoSpec. Checks that n_1 and n_2 are non-negative integers. 
     
@@ -161,10 +193,10 @@ def _validate_order_approx(n1 : int, n2 : int) -> None:
         raise TypeError("n_1 must be an int.")
     if not isinstance(n2, int):
         raise TypeError("n_2 must be an int.")
-    if not (n1 >= 0):
-        raise ValueError("We must have n_1 >= 0")
-    if not (n2 >= 0):
-        raise ValueError("We must have n_2 >= 0")
+    if not (n1 >= 1):
+        raise ValueError("We must have n_1 >= 1")
+    if not (n2 >= 1):
+        raise ValueError("We must have n_2 >= 1")
     return 
 
 def _validate_eps(eps : Union[float, Fraction, int]) -> Fraction:
@@ -203,11 +235,7 @@ def _input_validation_compInvg(n : int, y : float, g : Callable[[float], float],
     
     Not intended to be called directly. 
     '''
-    if not isinstance(n, int): 
-        raise TypeError("Precision n must be an int and not float") 
-    
-    if n <= 0:
-        raise ValueError("Precision n must be positive")  
+    _validate_order_approx(n) 
     
     if y < 0:
         raise ValueError("y in g^(-1)(y) must be non-negative") 
@@ -361,7 +389,8 @@ def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex,
     matrix : Callable[[int, int], complex]
         function N^2 -> C representing a closed infinite matrix. 
     
-    In the following, A = (matrix(i, j))
+    In the following, A = (matrix(i, j)):
+    
     n : int 
         size of mesh, must satisfy n > 0
     z : complex or tuple[Fraction, Fraction]
@@ -375,7 +404,6 @@ def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex,
     float_tolerance : float 
         error margin for floating point calculations. Defaults to module default (default 1e-10) 
       
-    
     Returns
     -------------
     Fraction
@@ -400,6 +428,8 @@ def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex,
     4. Hence we will then do O(n) iterations to find l 
     5. Hence the final complexity is O(n^3) + O(n) + O(n) = O(n^3 + n)
     '''
+    _validate_order_approx(n)
+    
     fn = f(n) if fn is None else fn # pre-compute f(n) in case it is expensive
     
     # check f 
@@ -439,17 +469,7 @@ def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex,
         raise RuntimeError(f"max_iter ({max_iter}) exceeded")
     
     return Fraction(l, n) # using fraction to avoid floating point errors
-
-def _input_validation_generate_grid(n : int) -> None:
-    '''
-    Input validation for generate_grid and generate_grid_slow. Not intended to be called directly. 
-    '''
-    if not isinstance(n, int):
-        raise TypeError("Grid size n is not an int")
     
-    if n <= 0:
-        raise ValueError("Grid size n is non-positive")
-
 def generate_grid_slow(n : int) -> list[complex]:
     '''
     Generates 1/n (Z + i Z) \cap B_n(0) = Grid(n) as a list of complexes. 
@@ -469,15 +489,15 @@ def generate_grid_slow(n : int) -> list[complex]:
     Raises 
     -------------
     TypeError: 
-        if n is not an integer
+        if n is not an integer (propagated from _validate_order_approx)
     ValueError:
-        if n <= 0
+        if n <= 0 (propagated from _validate_order_approx)
     Big-O Complexity 
     -------------
     O(n^4) - n^2 values of x, and n^2 values of y for each x. 
     '''
     # input validation
-    _input_validation_generate_grid(n)
+    _validate_order_approx(n)
     # return 
     return [
         (Fraction(x, n), Fraction(y, n))
@@ -505,16 +525,16 @@ def generate_grid(n : int) -> list[tuple[Fraction, Fraction]]:
     Raises 
     -------------
     TypeError: 
-        if n is not an integer
+        if n is not an integer (propagated from _validate_order_approx)
     ValueError:
-        if n <= 0
+        if n <= 0 (propagated from _validate_order_approx)
     
     Big-O Complexity 
     -------------
     O(n^4), but slightly (typically performs ~79% as many calcluations) faster because of narrowed search range. 
     '''
     # input validation 
-    _input_validation_generate_grid(n)
+    _validate_order_approx(n)
     
     # prepare for loop  
     n2 = n*n # pre-compute n^2 so we don't have to re-compute it every loop
@@ -565,11 +585,9 @@ def intersect_grid_with_ball(n : int, rad : Fraction, centre : tuple[Fraction, F
     ]
 
 # ALGORITHM 1.3
-def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Union[Callable[[float], float], None] = None, f : Callable[[int], int], fn : int = None, c : Callable[[int], Fraction], c_n : Fraction = None) -> tuple[list[tuple[Fraction, Fraction]], Fraction]:
+def CompSpecUB_Gamma(matrix : Callable[[int, int], complex], n : int, f : Callable[[int], int], c : Callable[[int], Fraction], g : Union[Callable[[float], float], None] = None, fn : int = None, c_n : Fraction = None) -> list[tuple[Fraction, Fraction]]:
     '''
-    Computes a tuple consisting of an approximation to the spectrum of the matrix input, as well as a bound on the error of this approximation.
-    
-    The second output, E_n(z), is such that dist(z, spec(A)) <= E_n(z), a guaranteed bound on the distance from the spectrum.
+    Computes an approximation to the spectrum of an operator A which has dispersion bounded by f and resolvent bounded by g. 
     
     Parameters
     -------------
@@ -577,44 +595,44 @@ def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Union[Callab
         function N^2 -> C representing a closed infinite matrix.
     n : int 
         degree of approximation 
+    f : Callable[[int], int]
+        a dispersion control for the matrix, accepting ints and giving ints. Must satisfy f(n) >= n + 1 and be increasing.
+    c : Callable[[int], Fraction]
+        a sequence satisfying D_(f, n)(A) <= c_n 
     g : Union[Callable[[float], float], None]
         increasing function g : R_+ -> R_+ representing resolvent control. Must satisfy g(0) = 0, g(x) <= x and be monotone increasing. That g(x) <= x or g is monotone is not checked.
         
         An input of None is treated as g(x) = x, which works if g(x) is for example self-adjoint.
         
         Defaults to None.  
-    
-    f : Callable[[int], int]
-        a dispersion control for the matrix, accepting ints and giving ints. Must satisfy f(n) >= n + 1 and be increasing.
     fn : int 
         allows for the value of f(n) to be pre-loaded, for example if this method is to be called in a loop and computing f is expensive. It is never checked that fn = f(n). 
-    c : Callable[[int], Fraction]
-        a sequence satisfying D_(f, n)(A) <= c_n 
     c_n : Fraction 
         allows for the value of c_n to be pre-loaded, for example if this method is to be called in a loop and computing c is expensive. It is never checked whether c_n = c(n).
     
     Returns
     -------------
-    tuple[list[tuple[Fraction, Fraction], float]
-        first element of tuple represents an approximation to the spectrum of the matrix, the second is a float giving the approximation error. 
+    list[tuple[Fraction, Fraction]]
+        A list of tuples of Fractions representing complex numbers in the approximation to spec(A). 
     
     Raises 
     -------------
     TypeError: 
         if n is not an integer (propagated from generate_grid)
         if f(n) is not an integer (propagated from _validate_f)
+        if c_n is not a float or Fraction (propagated from _validate_cn)
     ValueError:
         if n <= 0 (propagated from generate_grid)
         if f(n) < n + 1 (propagated from _validate_f)
+        if c_n <= 0 (propagated from _validate_cn)
     '''
     
     fn = f(n) if fn is None else fn # pre-compute f(n) to avoid re-computation in loop if it is not passed as pre-computed parameter
     _validate_f(f, n, fn) # check f
-    c_n = c(n) if c_n is None else c_n # pre-compute c_n to avoid re-computation in loop if it is not passed as pre-computed parameter
+    c_n = _validate_cn(c, n, c_n) # type checks c_n and pre-computes if not fed in as argument
     
     grid = generate_grid(n) 
     cur_min = None 
-    E_n = 0
     Gamma_n = []
     
     for z in grid:
@@ -625,7 +643,7 @@ def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Union[Callab
         rad = CompInvg(n, Fz, g) if g else Fraction(ceil(n*(y + float_tolerance)), n)
         
         if Fz*(z[0]*z[0] + z[1]*z[1] + 1) <= 1:
-            for w_j in intersect_grid_with_ball(CompInvg(n, Fz, g), z):
+            for w_j in intersect_grid_with_ball(rad, z):
                 F_j = DistSpec(matrix, n, w_j, f, fn)
                 cur_min = F_j if (not cur_min) else cur_min # if cur_min is still unspecified, take it to be F_j
                 
@@ -644,13 +662,111 @@ def CompSpecUB(matrix : Callable[[int, int], complex], n : int, g : Union[Callab
         else:
             Gamma_n.extend(W_z)
     
-    def E_n(z):
-        if z not in Gamma_n:
-            raise ValueError("Given z is not in Gamma_n")
-        else:
-            return CompInvg(n, DistSpec(matrix, n, z, fn) + c_n, g)
+    return Gamma_n
+
+def CompSpecUB_Error(matrix : Callable[[int, int], complex], z : complex, n : int, f : Callable[[int], int], c : Callable[[int], Fraction], g : Union[Callable[[float], float], None] = None, fn : int = None, c_n : Fraction = None) -> Fraction:
+    '''
+    Computes an upper bound on dist(z, spec(A)). 
     
-    return Gamma_n, E_n
+    By assumption, dist(z, spec(A)) <= ||R(z, A)||^(-1).
+    
+    Since DistSpec(n, z) := gamma_n(z) satisfies ||R(z, A)||^(-1) <= gamma_n(z, A), it is enough to approximate g^(-1)(gamma_n(z, A)).
+    
+    We do this with CompInvg. 
+    
+    Parameters
+    -------------
+    matrix : Callable[[int, int], complex]
+        function N^2 -> C representing a closed infinite matrix A.
+    z : complex 
+        The complex number z in dist(z, spec(A)).
+    n : int 
+        degree of approximation 
+    f : Callable[[int], int]
+        a dispersion control for the matrix, accepting ints and giving ints. Must satisfy f(n) >= n + 1 and be increasing.
+    c : Callable[[int], Fraction]
+        a sequence satisfying D_(f, n)(A) <= c_n
+    g : Union[Callable[[float], float], None]
+        increasing function g : R_+ -> R_+ representing resolvent control. Must satisfy g(0) = 0, g(x) <= x and be monotone increasing. That g(x) <= x or g is monotone is not checked.
+        
+        An input of None is treated as g(x) = x, which works if g(x) is for example self-adjoint.
+        
+        Defaults to None.
+    fn : int 
+        allows for the value of f(n) to be pre-loaded, for example if this method is to be called in a loop and computing f is expensive. It is never checked that fn = f(n). 
+    c_n : Fraction 
+        allows for the value of c_n to be pre-loaded, for example if this method is to be called in a loop and computing c is expensive. It is never checked whether c_n = c(n).
+    
+    Returns 
+    -------------
+    Fraction 
+        An upper bound to dist(z, spec(A)) as a rational of level n. 
+    
+    Raises 
+    -------------
+    TypeError 
+        if n is not an integer (propagated from _validate_order_approx)
+        if f(n) is not an integer (propagated from _validate_f)
+        if c_n is not a float or Fraction (propagated from _validate_cn)
+    ValueError 
+        if n <= 0 (propagated from _validate_order_approx)
+        if f(n) < n + 1 (propagated from _validate_f)
+        if c_n < 0 (propagated from _validate_cn)
+    '''
+    _validate_order_approx(n)
+    fn = fn if fn else f(n)
+    _validate_f(f, n, fn)
+    
+    c_n = _validate_cn(c, n, c_n)
+    
+    return CompInvg(n, DistSpec(matrix, n, z, fn) + c_n, g) if g else Fraction(ceil(n * (DistSpec(matrix, n, z, fn) + c_n)), n)
+
+def CompSpecUB(matrix : Callable[[int, int], complex], n : int, f : Callable[[int], int], c : Callable[[int], Fraction], g : Union[Callable[[float], float], None] = None, fn : int = None, c_n : Fraction = None) -> tuple[list[tuple[Fraction, Fraction]], Fraction]:
+    '''
+    Computes an approximation to spec(A) alongside an approximation to the error dist(z, spec(A)), returning a tuple of the two.
+    
+    The latter approximation gives a mathematically validated upper bound on the distance of all approximate spectral points to true spectral points.
+    
+    Parameters
+    -------------
+    matrix : Callable[[int, int], complex]
+        function N^2 -> C representing a closed infinite matrix.    
+    n : int 
+        degree of approximation 
+    f : Callable[[int], int]
+        a dispersion control for the matrix, accepting ints and giving ints. Must satisfy f(n) >= n + 1 and be increasing.
+    c : Callable[[int], Fraction]
+        a sequence satisfying D_(f, n)(A) <= c_n
+    g : Union[Callable[[float], float], None]
+        increasing function g : R_+ -> R_+ representing resolvent control. Must satisfy g(0) = 0, g(x) <= x and be monotone increasing. That g(x) <= x or g is monotone is not checked.
+        
+        An input of None is treated as g(x) = x, which works if g(x) is for example self-adjoint.
+        
+        Defaults to None.
+    fn : int 
+        allows for the value of f(n) to be pre-loaded, for example if this method is to be called in a loop and computing f is expensive. It is never checked that fn = f(n). 
+    c_n : Fraction 
+        allows for the value of c_n to be pre-loaded, for example if this method is to be called in a loop and computing c is expensive. It is never checked whether c_n = c(n).
+    
+    Returns
+    -------------
+    tuple[list[tuple[Fraction, Fraction]], Fraction]
+        Tuple consisting of both an approximation to spec(A) and a callable that accepts z and produces an approximation to dist(z, Spec(A)).
+    
+    Raises 
+    -------------
+    TypeError 
+        if n is not an integer (propagated from _validate_order_approx)
+        if f(n) is not an integer (propagated from _validate_f)
+        if c_n is not a float or Fraction (propagated from _validate_cn)
+    ValueError 
+        if n <= 0 (propagated from _validate_order_approx)
+        if f(n) < n + 1 (propagated from _validate_f)
+        if c_n < 0 (propagated from _validate_cn)
+    '''
+    Err = lambda z : CompSpecUB_Error(matrix, n, z, f, c, g, fn, c_n)
+    
+    return CompSpecUB_Gamma(matrix, n, f, c, g, fn, c_n), Err
 
 # ALGORITHM 2
 def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int, f : Callable[[int], int], c : Callable[[int], Fraction], fn : int = None, c_n : Fraction = None):
@@ -688,7 +804,7 @@ def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int
     grid = generate_grid(n)
     fn = f(n) if fn is None else fn # pre-compute f(n) to save DistSpec the trouble of re-computing it every time it is called 
     _validate_f(f, n, fn) # check f
-    c_n = c(n) if c_n is None else c_n # pre-compute c_n
+    c_n = _validate_cn(c, n, c_n) # validate c_n and load pre-computed value
     return [
         z 
         for z in grid 
@@ -718,10 +834,10 @@ def TestSpec(n1 : int, n2 : int, K_n2 : list[float], gamma_n1 : Callable[[comple
     Raises 
     -------------
     TypeError
-        If n1 or n2 is not an integer. Propagated from _validate_order_approx.
+        If n1 or n2 is not an integer. Propagated from _validate_order_approx_2.
         If float_tolerance is not a float or Fraction. Propagated from _validate_float_tolerance.
     ValueError
-        If n1 or n2 is negative. Propagated from _validate_order_approx.
+        If n1 or n2 is negative. Propagated from _validate_order_approx_2.
         If float_tolerance is non-positive. Propagated from _validate_float_tolerance.
     '''
     _validate_TestSpec(n1, n2)
@@ -758,17 +874,17 @@ def TestPseudoSpec(n1 : int, n2 : int, K_n2 : list[complex], gamma_n1 : Callable
     Raises 
     -------------
     TypeError
-        If n1 or n2 is not an integer. Propagated from _validate_order_approx.
+        If n1 or n2 is not an integer. Propagated from _validate_order_approx_2.
         If float_tolerance is not a float or Fraction. Propagated from _validate_float_tolerance.
     ValueError
-        If n1 or n2 is negative. Propagated from _validate_order_approx.
+        If n1 or n2 is negative. Propagated from _validate_order_approx_2.
         If float_tolerance is non-positive. Propagated from _validate_float_tolerance.
     '''
-    _validate_order_approx(n1, n2)
+    _validate_order_approx_2(n1, n2)
     _validate_float_tolerance(float_tolerance)
     eps = _validate_eps(eps)
     
-    for z in K_n2 
+    for z in K_n2:
         if (1 << n2) * gamma_n1(z) + float_tolerance < 1 + eps:
             return True 
     
@@ -800,15 +916,15 @@ def SpecGap(n1 : int, n2 : int, projected_matrix : np.array, float_tolerance : U
     Raises 
     -------------
     TypeError
-        If n1 or n2 is not an integer. Propagated from _validate_order_approx.
+        If n1 or n2 is not an integer. Propagated from _validate_order_approx_2.
         If float_tolerance is not a float or Fraction. Propagated from _validate_float_tolerance.
     ValueError
         If projected_matrix is not Hermitian. Propagated from _validate_matrix_hermitian.
-        If n1 or n2 is negative. Propagated from _validate_order_approx.
+        If n1 or n2 is negative. Propagated from _validate_order_approx_2.
         If float_tolerance is non-positive. Propagated from _validate_float_tolerance.
     '''
     _validate_matrix_hermitian(projected_matrix)
-    _validate_order_approx(n1, n2)
+    _validate_order_approx_2(n1, n2)
     _validate_float_tolerance(float_tolerance)
    
     if n1 == 1:
@@ -831,7 +947,8 @@ def SpecGap(n1 : int, n2 : int, projected_matrix : np.array, float_tolerance : U
 
 # ALGORITHM 5
 
-def SpecClass(n1 : int, n2 : int, matrix : Callable[[int, int], complex], f : Callable[[int], int], f_vals : int = None, projected_matrix : np.array = None, Gamma : list[list[tuple[Fraction, Fraction]]] = None, Err : list[Callable[[complex], Fraction]], float_tolerance : Union[float, Fraction] = config.float_tolerance) -> int:
+def SpecClass(n1 : int, n2 : int, matrix : Callable[[int, int], complex], f : Callable[[int], int], f_vals : int = None, projected_matrix : np.array = None, Gamma : list[list[tuple[Fraction, Fraction]]] = None, Err : list[Callable[[complex], Fraction]] = None, float_tolerance : Union[float, Fraction] = config.float_tolerance) -> int:
+    '''DOCSTRING MISSING'''
     if len(Gamma) != n1:
         raise ValueError(f"List specifying pre-computed Gamma must be of size n1. Input has size {len(Gamma)}")
     if len(Err) != n1:
@@ -841,12 +958,56 @@ def SpecClass(n1 : int, n2 : int, matrix : Callable[[int, int], complex], f : Ca
     if np.shape(projected_matrix) != (n1, n1):
         raise ValueError(f"Pre-computed projected_matrix does not have size n1 x n1. Shape is {np.shape(projected_matrix)}")
     
-    _validate_order_approx(n1, n2)
+    _validate_order_approx_2(n1, n2)
     _validate_float_tolerance(float_tolerance)
     
     if n1 <= n2:
         return 1
     
-    f_vals = f_vals if f_vals else [f(n) for _ in range(1, n1 + 1)]
-    projected_matrix = projected_matrix if projected_matrix else _generate_matrix(matrix, n1, n1, 0)
+    if not f_vals:
+        f_vals = []
+        for _ in range(1, n1 + 1):
+            fn = fn if fn else f(n) 
+            _validate_f(f, n, fn) 
+            f_vals.append(fn)
     
+    projected_matrix = projected_matrix if projected_matrix else _generate_matrix(matrix, n1, n1, 0)
+    _validate_matrix_hermitian(projected_matrix) # input matrix must be Hermitian 
+    
+    result_1 = False
+    cached_eigvals = []
+    
+    for n in range(n1 + 1):
+        trunc = projected_matrix[:n, :n]
+        eigvals = sorted(np.linalg.eigvalsh(trunc)) 
+        cached_eigvals.append(eigvals)
+        
+        gap = eigvals[1] - eigvals[0]
+        if gap*(n2) > 1 + float_tolerance: 
+            result = True
+        if gap*(2*n2) <= 1 + float_tolerance:
+            result = False
+    
+    if result_1:
+        return 1
+    
+    result_2 = False 
+    
+    for j in range(1, n2 + 1):
+        for eigvals in cached_eigvals:
+            if eigvals[j + 1] - eigvals[j] > 1 + float_tolerance:
+                result_2 = True 
+            if eigvals[j + 1] - eigvals[j] < 1 + float_tolerance:
+                result_2 = False 
+        if result_2:
+            return 2
+    
+    b = float('inf')
+    for k in range(1, n1 + 1):
+        a_k = min(x + Err[k - 1](x) for x in Gamma[k - 1])
+        b = min(Fraction(1, k) + Err[k - 1](a_k + Fraction(1, n2)), b)
+    
+    if b*(n2) >= 1 + float_tolerance:
+        return 3
+    else:
+        return 4
