@@ -223,7 +223,7 @@ class DiagonalMatrix:
         '''
         return f"SparseMatrix({self.diagonal}, {self.tolerance})"
     
-    def PseudoInverse(self) -> DiagonalMatrix:
+    def PseudoInverse(self) -> 'DiagonalMatrix':
         '''
         Computes the Moore-Penrose pseudoinverse A^+ of the diagonal matrix A.
         
@@ -295,7 +295,7 @@ class DiagonalMatrix:
         return self.tolerance 
     
     def set_tolerance(self, tolerance : Union[float, Fraction]) -> None:
-         '''
+        '''
         Changes tolerance of matrix. Basic setter.
 
         Parameters
