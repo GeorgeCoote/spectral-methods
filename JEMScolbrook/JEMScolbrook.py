@@ -5,6 +5,7 @@ from collections.abc import Callable
 from math import isqrt, sqrt, floor, ceil
 from typing import Union
 import numpy as np
+import logging
 
 '''
 Implementation of algorithms from "The foundations of spectral 
@@ -104,6 +105,7 @@ class Config:
         return type(value) in self.allowed_types[key]
 
 config = Config() # init config
+logger = logging.getLogger(__name__)
 
 #general helper functions
 
@@ -152,7 +154,7 @@ def _validate_cn(c : Callable[[int], Union[Fraction, float]], n : int, c_n : Uni
         raise ValueError("c_n must be non-negative") 
     
     if isinstance(c_n, float):
-        print(f"WARNING: Rounding float c_n up to rational of level n")
+        logger.warning(f"Rounding float c_n up to rational of level n")
         return Fraction(ceil(n*c_n), n)
     
 
@@ -214,7 +216,7 @@ def _validate_eps(eps : Union[float, Fraction, int]) -> Fraction:
     if isinstance(eps, int):
         return Fraction(eps) # convert int to fraction 
     if isinstance(eps, float):
-        print("WARNING: Trying to convert float to Fraction. Numerators and denominators will likely be large and non-exact. Recommend pre-processing")
+        logger.warning("Converting float to Fraction. Numerators and denominators will likely be large and non-exact. Recommend pre-processing")
         return Fraction(eps) # convert float to fraction
 
 def _validate_matrix_hermitian(matrix : np.array):
@@ -240,7 +242,7 @@ def _input_validation_compInvg(n : int, y : float, g : Callable[[float], float],
     if y < 0:
         raise ValueError("y in g^(-1)(y) must be non-negative") 
     
-    if abs(g(0.0)) >= float_tolerance:
+    if abs(g(0.0)) > float_tolerance:
         raise ValueError("We must have g(0) = 0, with g our resolvent bound. This g(0) falls out of floating point tolerance.")
 
 def _find_window_compInvg(n : int, y : float, g : Callable[[float], float], init_guess : int = config.init_guess, float_tolerance : float = config.float_tolerance, max_iter : int = config.max_iter) -> Fraction:
@@ -380,7 +382,7 @@ def CompInvg(n : int, y : Union[float, Fraction], g : Callable[[float], float], 
     return Fraction(left, n)
 
 # ALGORITHM 1.2
-def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex, tuple[Fraction, Fraction]], f : Callable[[int], int], fn : int = None, max_iter : int = config.max_iter, float_tolerance : float = config.float_tolerance) -> Fraction:
+def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex, tuple[Fraction, Fraction]], f : Callable[[int], int], fn : int = None, float_tolerance : float = config.float_tolerance) -> Fraction:
     '''
     Approximate norm(R(z, A))^(-1) with mesh size 1/n given dispersion f
         
@@ -464,11 +466,6 @@ def DistSpec(matrix : Callable[[int, int], complex], n : int, z : Union[complex,
     else:
         l = ceil(n * sqrt(threshold))
         return Fraction(l, n)
-
-    if l == max_iter:
-        raise RuntimeError(f"max_iter ({max_iter}) exceeded")
-    
-    return Fraction(l, n) # using fraction to avoid floating point errors
     
 def generate_grid_slow(n : int) -> list[complex]:
     '''
@@ -949,9 +946,9 @@ def SpecGap(n1 : int, n2 : int, projected_matrix : np.array, float_tolerance : U
 
 # ALGORITHM 5
 
-def SpecClass(n1 : int, n2 : int, matrix : Callable[[int, int], complex], f : Callable[[int], int], f_vals : int = None, projected_matrix : np.array = None, Gamma : list[list[tuple[Fraction, Fraction]]] = None, Err : list[Callable[[complex], Fraction]] = None, float_tolerance : Union[float, Fraction] = config.float_tolerance) -> int:
+def SpecClass(n1 : int, n2 : int, matrix : Callable[[int, int], complex], f : Callable[[int], int], f_vals : list[int] = None, projected_matrix : np.array = None, Gamma : list[list[tuple[Fraction, Fraction]]] = None, Err : list[Callable[[complex], Fraction]] = None, float_tolerance : Union[float, Fraction] = config.float_tolerance) -> int:
     '''DOCSTRING MISSING'''
-    if len(Gamma) != n1:
+    if Gamma and len(Gamma) != n1:
         raise ValueError(f"List specifying pre-computed Gamma must be of size n1. Input has size {len(Gamma)}")
     if len(Err) != n1:
         raise ValueError(f"List specifying pre-computed errors must be of size n1. Input has size {len(Err)}") 
