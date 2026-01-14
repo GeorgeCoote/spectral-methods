@@ -1028,11 +1028,11 @@ def SpecClass(n1 : int, n2 : int, matrix : Callable[[int, int], complex], f : Ca
     if n1 <= n2:
         return 1
     
-    for n1 in range(1, n1 + 1): # populate missing values for f
-        if n1 not in f_vals:
-            to_check = f(n1)
+    for j in range(1, n1 + 1): # populate missing values for f
+        if j not in f_vals:
+            to_check = f(j)
             _validate_f(f, n, to_check)
-            f_vals[n1] = to_check
+            f_vals[j] = to_check
     
     
     projected_matrix = projected_matrix if projected_matrix else _generate_matrix(matrix, n1, n1, 0)
