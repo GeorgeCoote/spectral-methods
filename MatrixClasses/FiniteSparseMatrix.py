@@ -427,7 +427,7 @@ class FiniteSparseMatrix:
         '''
         return self.entries.pop(pos, self.default)
 
-    def copy(self) -> FiniteSparseMatrix:
+    def copy(self) -> 'FiniteSparseMatrix':
         '''
         Create shallow copy of matrix. 
 
