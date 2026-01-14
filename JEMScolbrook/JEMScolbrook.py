@@ -966,14 +966,12 @@ def SpecGap(n1 : int, n2 : int, projected_matrix : np.array, float_tolerance : U
 
 # ALGORITHM 5
 
-def SpecClass(n1 : int, n2 : int, matrix : Callable[[int, int], complex], f : Callable[[int], int], f_vals : list[int] = None, projected_matrix : np.array = None, Gamma : list[list[tuple[Fraction, Fraction]]] = None, Err : list[Callable[[complex], Fraction]] = None, float_tolerance : Union[float, Fraction] = config.float_tolerance) -> int:
+def SpecClass(n1 : int, n2 : int, matrix : Callable[[int, int], complex], f : Callable[[int], int], f_vals : dict[int, int] = None, projected_matrix : np.array = None, Gamma : list[list[tuple[Fraction, Fraction]]] = None, Err : list[Callable[[complex], Fraction]] = None, float_tolerance : Union[float, Fraction] = config.float_tolerance) -> int:
     '''DOCSTRING MISSING'''
-    if Gamma and len(Gamma) != n1:
+    if not Gamma or len(Gamma) != n1:
         raise ValueError(f"List specifying pre-computed Gamma must be of size n1. Input has size {len(Gamma)}")
     if len(Err) != n1:
         raise ValueError(f"List specifying pre-computed errors must be of size n1. Input has size {len(Err)}") 
-    if len(f_vals) != n1:
-        raise ValueError(f"List specifying pre-computed dispersion bound f must be of size n1. Input has size {len(f_vals)}")
     if np.shape(projected_matrix) != (n1, n1):
         raise ValueError(f"Pre-computed projected_matrix does not have size n1 x n1. Shape is {np.shape(projected_matrix)}")
     
@@ -983,12 +981,12 @@ def SpecClass(n1 : int, n2 : int, matrix : Callable[[int, int], complex], f : Ca
     if n1 <= n2:
         return 1
     
-    if not f_vals:
-        f_vals = []
-        for _ in range(1, n1 + 1):
-            fn = fn if fn else f(n) 
-            _validate_f(f, n, fn) 
-            f_vals.append(fn)
+    for n1 in range(1, n1 + 1): # populate missing values for f
+        if n1 not in f_vals:
+            to_check = f(n1)
+            _validate_f(f, n, to_check)
+            f_vals[n1] = to_check
+    
     
     projected_matrix = projected_matrix if projected_matrix else _generate_matrix(matrix, n1, n1, 0)
     _validate_matrix_hermitian(projected_matrix) # input matrix must be Hermitian 
