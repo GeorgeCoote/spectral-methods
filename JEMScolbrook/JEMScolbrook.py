@@ -646,7 +646,7 @@ def CompSpecUB_Gamma(matrix : Callable[[int, int], complex], n : int, f : Callab
         if c_n <= 0 (propagated from _validate_cn)
     '''
     
-    fn = f(n) if fn is None else fn # pre-compute f(n) to avoid re-computation in loop if it is not passed as pre-computed parameter
+    fn = fn if fn else f(n) # pre-compute f(n) to avoid re-computation in loop if it is not passed as pre-computed parameter
     _validate_f(f, n, fn) # check f
     c_n = _validate_cn(c, n, c_n) # type checks c_n and pre-computes if not fed in as argument
     
@@ -821,7 +821,7 @@ def PseudoSpecUB(matrix : Callable[[int, int], complex], eps : Fraction, n : int
     '''
     eps = _validate_eps(eps)
     grid = generate_grid(n)
-    fn = f(n) if fn is None else fn # pre-compute f(n) to save DistSpec the trouble of re-computing it every time it is called 
+    fn = fn if fn else f(n) # pre-compute f(n) to save DistSpec the trouble of re-computing it every time it is called 
     _validate_f(f, n, fn) # check f
     c_n = _validate_cn(c, n, c_n) # validate c_n and load pre-computed value
     return [
